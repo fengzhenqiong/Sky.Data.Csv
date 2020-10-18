@@ -1,4 +1,5 @@
-﻿using System;
+﻿//@Author: Sky Feng(im.sky@foxmail.com).
+using System;
 using System.IO;
 
 namespace Sky.Data.Csv.Test
@@ -17,15 +18,15 @@ namespace Sky.Data.Csv.Test
 
             foreach (var csvFile in csvFiles)
             {
-                var startTime = DateTime.Now;
+                var folder = Path.GetDirectoryName(csvFile);
+                var fileName = Path.GetFileNameWithoutExtension(csvFile);
+                var dumpFileName = String.Format("{0}-dumpped-sky.csv", fileName);
+                var dumpFile = Path.Combine(folder, dumpFileName);
 
+
+                var startTime = DateTime.Now;
                 using (var reader = CsvReader.Create(csvFile))
                 {
-                    var folder = Path.GetDirectoryName(csvFile);
-                    var fileName = Path.GetFileNameWithoutExtension(csvFile);
-                    var dumpFileName = String.Format("{0}-dumpped-sky.csv", fileName);
-                    var dumpFile = Path.Combine(folder, dumpFileName);
-
                     using (var writer = CsvWriter.Create(dumpFile))
                     {
                         foreach (var row in reader)
@@ -34,8 +35,8 @@ namespace Sky.Data.Csv.Test
                         }
                     }
                 }
-
                 var endTime = DateTime.Now;
+
                 Console.WriteLine("Time: {0}ms", (endTime - startTime).TotalMilliseconds);
                 Console.WriteLine("======================");
             }
