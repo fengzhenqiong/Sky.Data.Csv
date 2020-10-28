@@ -64,6 +64,7 @@ namespace Sky.Data.Csv
             ++this.RowIndex;
 
             var textLen = oneRowText.Length;
+            var sepChar = this.mCsvSettings.Seperator;
 
             if (textLen == 0) return new List<String>();
             if (this.mCsvSettings.UseCache && mCachedRows.ContainsKey(oneRowText))
@@ -78,7 +79,7 @@ namespace Sky.Data.Csv
                 #region Non-Quoted CSV Cell Value Processor
                 if (firstChar != '\"')
                 {
-                    for (var c = firstChar; c != ','; c = oneRowText[charPos])
+                    for (var c = firstChar; c != sepChar; c = oneRowText[charPos])
                     {
                         if (c == '\"' && !this.mCsvSettings.IgnoreErrors)
                             ThrowException(oneRowText, this.RowIndex, charPos);
@@ -101,7 +102,7 @@ namespace Sky.Data.Csv
 
                         if (theChar != '\"')
                             mCellValueBuilder.Append(theChar);
-                        else if ((textLen <= charPos + 1) || (nextChar = oneRowText[charPos + 1]) == ',')
+                        else if ((textLen <= charPos + 1) || (nextChar = oneRowText[charPos + 1]) == sepChar)
                         {
                             ++charPos;
                             result.Add(mCellValueBuilder.ToString());
@@ -116,7 +117,7 @@ namespace Sky.Data.Csv
                 }
                 #endregion
             }
-            if (oneRowText[textLen - 1] == ',')
+            if (oneRowText[textLen - 1] == sepChar)
                 result.Add(String.Empty);
 
             if (this.mCsvSettings.UseCache && !mCachedRows.ContainsKey(oneRowText))

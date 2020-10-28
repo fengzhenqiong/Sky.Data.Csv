@@ -8,15 +8,15 @@ namespace Sky.Data.Csv
 {
     public class CsvWriter : IDisposable
     {
-        private static readonly Char[] needQuoteChars = { '\n', '\"', ',' };
-
         private readonly StreamWriter mWriter;
         private readonly CsvWriterSettings mCsvSettings;
+        private readonly Char[] needQuoteChars;
 
         private CsvWriter(FileStream stream, CsvWriterSettings settings)
         {
             this.mCsvSettings = settings;
             settings.BufferSize = Math.Min(1024 * 1024 * 4, Math.Max(settings.BufferSize, 1024 * 4));
+            needQuoteChars = new Char[] { '\n', '\"', settings.Seperator };
             this.mWriter = new StreamWriter(stream, settings.Encoding, settings.BufferSize);
             if (settings.OverwriteExisting)
             {
@@ -73,6 +73,7 @@ namespace Sky.Data.Csv
             ++RowIndex;
 
             row = row ?? new List<String>();
+            var seperatorChar = this.mCsvSettings.Seperator;
             var rowLine = new StringBuilder(64);
 
             foreach (var originalCellValueString in row)
@@ -85,7 +86,7 @@ namespace Sky.Data.Csv
                         valueString.Replace("\"", "\"\"").Replace("\r\n", "\r"));
                 }
 
-                rowLine.Append(valueString).Append(',');
+                rowLine.Append(valueString).Append(seperatorChar);
             }
 
             if (rowLine.Length > 0)

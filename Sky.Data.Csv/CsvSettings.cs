@@ -5,13 +5,15 @@ namespace Sky.Data.Csv
 {
     public abstract class CsvSettings
     {
-        public Int32 BufferSize { get; set; }
+        public Char Seperator { get; set; }
         public Encoding Encoding { get; set; }
+        public Int32 BufferSize { get; set; }
 
         public CsvSettings()
         {
+            this.Seperator = ',';
+            this.Encoding = Encoding.Default;
             this.BufferSize = 64 * 1024;
-            this.Encoding = Encoding.UTF8;
         }
     }
 
