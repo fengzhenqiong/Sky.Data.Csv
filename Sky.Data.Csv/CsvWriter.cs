@@ -68,6 +68,10 @@ namespace Sky.Data.Csv
             foreach (var currentRow in rows) this.WriteRow(currentRow);
             return this;
         }
+        public CsvWriter WriteRow(params String[] row)
+        {
+            return this.WriteRow(new List<String>(row));
+        }
         public CsvWriter WriteRow(IEnumerable<String> row)
         {
             ++RowIndex;

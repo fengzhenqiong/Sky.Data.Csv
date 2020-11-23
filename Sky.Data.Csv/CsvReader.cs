@@ -12,7 +12,7 @@ namespace Sky.Data.Csv
         private const String INVALID_DATA =
             "ERROR. LINE: {0}, POSITION: {1}, ROW NO.: {2}.";
         private const String INVALID_DATA_FILE =
-            "ERROR. FILE: {0} LINE: {1}, POSITION: {2}, ROW NO.: {3}.";
+            "ERROR. FILE: {0}, LINE: {1}, POSITION: {2}, ROW NO.: {3}.";
 
         private readonly Dictionary<String, List<String>>
             mCachedRows = new Dictionary<String, List<String>>();
