@@ -144,7 +144,6 @@ namespace Sky.Data.Csv
             this.mFilePath = filePath;
         }
 
-
         public Int32 RowIndex { get; private set; }
         public List<String> ReadRow()
         {

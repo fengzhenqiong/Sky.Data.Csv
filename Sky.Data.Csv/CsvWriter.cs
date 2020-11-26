@@ -77,6 +77,7 @@ namespace Sky.Data.Csv
         #endregion
 
         public Int32 RowIndex { get; private set; }
+
         public CsvWriter<T> WriteRows(params T[] data)
         {
             return this.WriteRows(new List<T>(data));

@@ -22,7 +22,7 @@ namespace Sky.Data.Csv
         public abstract List<String> Serialize(TData data);
     }
 
-    internal class RawDataResolver : AbstractDataResolver<List<String>>
+    public class RawDataResolver : AbstractDataResolver<List<String>>
     {
         public override List<String> Deserialize(List<String> data)
         {
