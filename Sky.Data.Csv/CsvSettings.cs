@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Collections.Generic;
 
 namespace Sky.Data.Csv
 {
@@ -12,7 +13,7 @@ namespace Sky.Data.Csv
         public CsvSettings()
         {
             this.Seperator = ',';
-            this.Encoding = Encoding.Default;
+            this.Encoding = Encoding.UTF8;
             this.BufferSize = 64 * 1024;
         }
     }
@@ -33,7 +34,7 @@ namespace Sky.Data.Csv
         public Boolean OverwriteExisting { get; set; }
         public CsvWriterSettings()
         {
-            this.OverwriteExisting = false;
+            this.OverwriteExisting = true;
         }
     }
 }

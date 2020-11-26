@@ -38,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CsvReader.cs" />
+    <Compile Include="CsvResolver.cs" />
     <Compile Include="CsvSettings.cs" />
     <Compile Include="CsvWriter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -7,15 +7,10 @@ using System.Text;
 
 namespace Sky.Data.Csv
 {
-    public class CsvReader : IEnumerable<List<String>>, IDisposable
+    public class CsvReader<T> : IEnumerable<T>, IDisposable
     {
-        private const String INVALID_DATA =
-            "ERROR. LINE: {0}, POSITION: {1}, ROW NO.: {2}.";
-        private const String INVALID_DATA_FILE =
-            "ERROR. FILE: {0}, LINE: {1}, POSITION: {2}, ROW NO.: {3}.";
-
-        private readonly Dictionary<String, List<String>>
-            mCachedRows = new Dictionary<String, List<String>>();
+        private const String INVALID_DATA = "ERROR. LINE: {0}, POSITION: {1}, ROW NO.: {2}.";
+        private const String INVALID_DATA_FILE = "ERROR. FILE: {0}, LINE: {1}, POSITION: {2}, ROW NO.: {3}.";
 
         private readonly Char[] mBuffer;
         private Int32 mBufferPosition = 0, mBufferCharCount = 0;
@@ -24,20 +19,8 @@ namespace Sky.Data.Csv
         private readonly CsvReaderSettings mCsvSettings;
         private readonly String mFilePath;
 
-        public Int32 RowIndex { get; private set; }
-
-        private CsvReader(Stream stream, CsvReaderSettings settings)
-        {
-            this.mCsvSettings = settings;
-            settings.BufferSize = Math.Min(1024 * 1024 * 4, Math.Max(settings.BufferSize, 1024 * 4));
-            this.mReader = new StreamReader(stream, settings.Encoding, false, settings.BufferSize);
-            this.mBuffer = new Char[settings.BufferSize];
-        }
-        private CsvReader(String filePath, CsvReaderSettings settings)
-            : this(File.OpenRead(filePath), settings)
-        {
-            this.mFilePath = filePath;
-        }
+        private readonly IDataResolver<T> dataResolver;
+        private readonly Dictionary<String, List<String>> cachedRows = new Dictionary<String, List<String>>();
 
         private void ThrowException(String rowText, Int32 rowIndex, Int32 chPos)
         {
@@ -67,8 +50,8 @@ namespace Sky.Data.Csv
             var sepChar = this.mCsvSettings.Seperator;
 
             if (textLen == 0) return new List<String>();
-            if (this.mCsvSettings.UseCache && mCachedRows.ContainsKey(oneRowText))
-                return mCachedRows[oneRowText];
+            if (this.mCsvSettings.UseCache && cachedRows.ContainsKey(oneRowText))
+                return cachedRows[oneRowText];
 
             var result = new List<String>(16);
             for (Int32 charPos = 0; charPos < textLen; ++charPos)
@@ -120,51 +103,49 @@ namespace Sky.Data.Csv
             if (oneRowText[textLen - 1] == sepChar)
                 result.Add(String.Empty);
 
-            if (this.mCsvSettings.UseCache && !mCachedRows.ContainsKey(oneRowText))
-                mCachedRows[oneRowText] = result;
+            if (this.mCsvSettings.UseCache && !cachedRows.ContainsKey(oneRowText))
+                cachedRows[oneRowText] = result;
 
             return result;
         }
 
-        public static CsvReader Create(Byte[] stream)
-        {
-            return Create(stream, new CsvReaderSettings());
-        }
-        public static CsvReader Create(Byte[] stream, CsvReaderSettings settings)
-        {
-            return Create(new MemoryStream(stream), settings);
-        }
-        public static CsvReader Create(String filePath)
-        {
-            return Create(filePath, new CsvReaderSettings());
-        }
-        public static CsvReader Create(String filePath, CsvReaderSettings settings)
-        {
-            if (String.IsNullOrEmpty(filePath))
-                throw new ArgumentException("filePath is invalid", "filePath");
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException("File does not exist", filePath);
-
-            return new CsvReader(filePath, settings);
-        }
-        public static CsvReader Create(Stream stream)
-        {
-            return Create(stream, new CsvReaderSettings());
-        }
-        public static CsvReader Create(Stream stream, CsvReaderSettings settings)
+        private static void EnsureParameters(Stream stream, CsvReaderSettings settings, IDataResolver<T> dataResolver)
         {
             if (stream == null)
                 throw new ArgumentNullException("stream");
             if (!stream.CanRead)
                 throw new ArgumentException("stream is not readable", "stream");
-            if (settings.Encoding == null)
-                throw new ArgumentNullException("encoding");
-            if (settings.BufferSize <= 0)
-                throw new ArgumentException("Invalid buffer size", "stream");
 
-            return new CsvReader(stream, settings);
+            if (settings.Encoding == null)
+                throw new ArgumentNullException("settings.Encoding");
+
+            if (dataResolver == null)
+                throw new ArgumentNullException("dataResolver");
+        }
+        protected static void CheckFilePath(String filePath)
+        {
+            if (String.IsNullOrEmpty(filePath))
+                throw new ArgumentException("filePath is invalid", "filePath");
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException("File does not exist", filePath);
+        }
+        protected CsvReader(Stream stream, CsvReaderSettings settings, IDataResolver<T> dataResolver)
+        {
+            this.dataResolver = dataResolver;
+            this.mCsvSettings = settings = settings ?? new CsvReaderSettings();
+            EnsureParameters(stream, settings, dataResolver);
+            settings.BufferSize = Math.Min(4096 * 1024, Math.Max(settings.BufferSize, 4096));
+            this.mReader = new StreamReader(stream, settings.Encoding, false, settings.BufferSize);
+            this.mBuffer = new Char[settings.BufferSize];
+        }
+        protected CsvReader(String filePath, CsvReaderSettings settings, IDataResolver<T> dataResolver)
+            : this(File.OpenRead(filePath), settings, dataResolver)
+        {
+            this.mFilePath = filePath;
         }
 
+
+        public Int32 RowIndex { get; private set; }
         public List<String> ReadRow()
         {
             if (!this.EnsureBuffer()) return null;
@@ -196,13 +177,87 @@ namespace Sky.Data.Csv
 
             return ParseOneRow(oneRowText.ToString());
         }
+
+        #region Public Static Methods for creating instance
+        public static CsvReader<T> Create(String filePath, IDataResolver<T> dataResolver)
+        {
+            return Create(filePath, new CsvReaderSettings(), dataResolver);
+        }
+        public static CsvReader<T> Create(String filePath, CsvReaderSettings settings, IDataResolver<T> dataResolver)
+        {
+            CheckFilePath(filePath);
+            return new CsvReader<T>(filePath, settings, dataResolver);
+        }
+        public static CsvReader<T> Create(Byte[] stream, IDataResolver<T> dataResolver)
+        {
+            return Create(stream, new CsvReaderSettings(), dataResolver);
+        }
+        public static CsvReader<T> Create(Byte[] stream, CsvReaderSettings settings, IDataResolver<T> dataResolver)
+        {
+            return Create(new MemoryStream(stream), settings, dataResolver);
+        }
+        public static CsvReader<T> Create(Stream stream, IDataResolver<T> dataResolver)
+        {
+            return Create(stream, new CsvReaderSettings(), dataResolver);
+        }
+        public static CsvReader<T> Create(Stream stream, CsvReaderSettings settings, IDataResolver<T> dataResolver)
+        {
+            return new CsvReader<T>(stream, settings, dataResolver);
+        }
+        #endregion
+
+        #region Implementing IDisposable & IEnumerable
+        public void Dispose() { this.mReader.Close(); }
         IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
-        public IEnumerator<List<String>> GetEnumerator()
+        public IEnumerator<T> GetEnumerator()
         {
             for (var row = this.ReadRow(); row != null; row = this.ReadRow())
-                yield return row;
+            {
+                yield return this.dataResolver.Deserialize(row);
+            };
+        }
+        #endregion
+    }
+
+    public class CsvReader : CsvReader<List<String>>
+    {
+        private CsvReader(Stream stream, CsvReaderSettings settings)
+            : base(stream, settings, new RawDataResolver())
+        {
+
+        }
+        private CsvReader(String filePath, CsvReaderSettings settings)
+            : base(filePath, settings, new RawDataResolver())
+        {
+
         }
 
-        public void Dispose() { this.mReader.Close(); }
+        #region Public Static Methods for creating instance
+        public static CsvReader Create(String filePath)
+        {
+            return Create(filePath, new CsvReaderSettings());
+        }
+        public static CsvReader Create(String filePath, CsvReaderSettings settings)
+        {
+            CheckFilePath(filePath);
+            return new CsvReader(filePath, settings);
+        }
+        public static CsvReader Create(Byte[] stream)
+        {
+            return Create(stream, new CsvReaderSettings());
+        }
+        public static CsvReader Create(Byte[] stream, CsvReaderSettings settings)
+        {
+            return Create(new MemoryStream(stream), settings);
+        }
+        public static CsvReader Create(Stream stream)
+        {
+            return Create(stream, new CsvReaderSettings());
+        }
+        public static CsvReader Create(Stream stream, CsvReaderSettings settings)
+        {
+            return new CsvReader(stream, settings);
+        }
+        #endregion
     }
 }
