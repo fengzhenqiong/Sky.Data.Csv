@@ -87,7 +87,6 @@ namespace Sky.Data.Csv.Test
                 {
                     foreach (var data in reader)
                     {
-                        //writer.WriteRow(data);
                     }
                 }
                 var endTime = DateTime.Now;
