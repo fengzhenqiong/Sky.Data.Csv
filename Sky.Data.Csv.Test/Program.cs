@@ -85,12 +85,9 @@ namespace Sky.Data.Csv.Test
                 var startTime = DateTime.Now;
                 using (var reader = CsvReader.Create(csvFile))
                 {
-                    using (var writer = CsvWriter.Create(dumpFile))
+                    foreach (var data in reader)
                     {
-                        foreach (var data in reader)
-                        {
-                            writer.WriteRow(data);
-                        }
+                        //writer.WriteRow(data);
                     }
                 }
                 var endTime = DateTime.Now;

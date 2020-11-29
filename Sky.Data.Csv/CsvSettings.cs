@@ -34,7 +34,7 @@ namespace Sky.Data.Csv
         public Boolean OverwriteExisting { get; set; }
         public CsvWriterSettings()
         {
-            this.OverwriteExisting = true;
+            this.OverwriteExisting = false;
         }
     }
 }

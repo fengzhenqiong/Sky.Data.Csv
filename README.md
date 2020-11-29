@@ -20,7 +20,7 @@ using(var reader = CsvReader.Create("path-to-file")){
 }
 ```
 
-The Create static method from both ```CsvReader``` and ```CsvWriter``` can accept a second parameter specifying some options like buffer size, encoding, whether or not to overwrite the existing file when writing a CSV file and whether or not to use cache when reading a CSV file, etc.
+The ```Create``` static method from both ```CsvReader``` and ```CsvWriter``` can accept a second parameter specifying some options like buffer size, encoding, whether or not to overwrite the existing file when writing a CSV file and whether or not to use cache when reading a CSV file, etc.
 
 The ```UseCache``` option in the ```CsvReaderSettings``` class is really useful when most of the rows in the CSV file are duplicate. This option helps a lot to improve the performance.
 
@@ -28,13 +28,71 @@ Also both ```CsvReaderSettings``` and ```CsvWriterSettings``` support a ```Separ
 
 
 
+### Support reading and writing objects
+
+If you use the generic version of ```CsvReader<T>``` and ```CsvWriter<T>```, the ```Create``` static method will also accept a parameter of type ```IDataResolver<T>``` which supports ```CsvReader``` and ```CsvWriter``` to read and write typed objects. 
+
+The ```AbstractDataResolver<T>``` provides a base type with some basic implementation and you can create subclasses of it.
+
+```c#
+public class Student
+{
+    public String Name { get; set; }
+    public String Address { get; set; }
+
+    public Int32 Height { get; set; }
+    public DateTime Birthday { get; set; }
+}
+
+public class StudentResolver : AbstractDataResolver<Student>
+{
+    public override Student Deserialize(List<String> data)
+    {
+        var culture = CultureInfo.InvariantCulture;
+        return new Student
+        {
+            Name = data[0],
+            Height = Int32.Parse(data[1]),
+            Birthday = DateTime.ParseExact(data[2], "yyyy-MM-dd", culture),
+            Address = data[3],
+        };
+    }
+
+    public override List<String> Serialize(Student data)
+    {
+        return new List<String>
+        {
+            data.Name,
+            data.Height.ToString(),
+            data.Birthday.ToString("yyyy-MM-dd"),
+            data.Address,
+        };
+    }
+}
+
+static void Main(String[] args)
+{
+    var dataResolver = new StudentResolver();
+    var csvPath = @"..\..\TestData.Csv\csv-students.csv";
+    using (var reader = CsvReader<Student>.Create(csvPath, dataResolver))
+    {
+        foreach (var student in reader)
+        {
+            Console.WriteLine(student.Address);
+        }
+    }
+}
+```
+
+
+
 ## Target
 
-This is a simple but fast implementation of **CsvReader** and **CsvWriter**.
+This is a simple but fast implementation of **```CsvReader```** and **```CsvWriter```**.
 
-This CsvReader supports all four formats saved by the newest version of Excel, that's **comma seperated**, **ms dos**, **macintosh** and **comma seperated UTF8**. And you can also specify a Cell Separator Character.
+This CsvReader supports all four formats saved by the newest version of Excel, that's **comma seperated**, **ms dos**, **macintosh** and **comma seperated UTF8**. 
 
-If the CSV file is not saved in UTF8 format, you can specify the Encoding in the reader settings.
+By default, the ```CsvReaderSettings``` and ```CsvWriterSettings``` uses ```Encoding.Default``` as the default encoding and comma (,) as the field seperator. You can also specify these settings (and some other settings) by creating a new setting object and pass it to the ```Create``` static method.
 
 
 
