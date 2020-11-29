@@ -13,7 +13,7 @@ namespace Sky.Data.Csv
         public CsvSettings()
         {
             this.Seperator = ',';
-            this.Encoding = Encoding.UTF8;
+            this.Encoding = Encoding.Default;
             this.BufferSize = 64 * 1024;
         }
     }
