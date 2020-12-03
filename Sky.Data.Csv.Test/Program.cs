@@ -43,7 +43,7 @@ namespace Sky.Data.Csv.Test
 
     class Program
     {
-        static void TestGenericWriter()
+        static void TestGenericReader()
         {
             var dataResolver = new StudentResolver();
             var csvFiles = new[] {
@@ -64,7 +64,7 @@ namespace Sky.Data.Csv.Test
                 Console.WriteLine("======================");
             }
         }
-        static void TestSpecificWriter()
+        static void TestSpecificReader()
         {
             var csvFiles = new[] {
                 @"..\..\TestData.Csv\csv-ms-dos.csv",
@@ -98,8 +98,8 @@ namespace Sky.Data.Csv.Test
 
         static void Main(string[] args)
         {
-            TestSpecificWriter();
-            TestGenericWriter();
+            TestSpecificReader();
+            TestGenericReader();
         }
     }
 }
