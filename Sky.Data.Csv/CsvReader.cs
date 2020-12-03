@@ -7,6 +7,11 @@ using System.Text;
 
 namespace Sky.Data.Csv
 {
+    /// <summary>
+    /// Generic version of CsvReader with which you can directly read typed objects from a CSV file.
+    /// A custom data resolver will be working as the data converter between CSV records and data objects.
+    /// </summary>
+    /// <typeparam name="T">The generic type of which objects will be read.</typeparam>
     public class CsvReader<T> : IEnumerable<T>, IDisposable
     {
         private const String INVALID_DATA = "ERROR. LINE: {0}, POSITION: {1}, ROW NO.: {2}.";
@@ -21,6 +26,7 @@ namespace Sky.Data.Csv
 
         private readonly IDataResolver<T> dataResolver;
         private readonly Dictionary<String, List<String>> cachedRows = new Dictionary<String, List<String>>();
+        private Boolean fileHeaderAlreadySkipped = false;
 
         private void ThrowException(String rowText, Int32 rowIndex, Int32 chPos)
         {
@@ -44,7 +50,7 @@ namespace Sky.Data.Csv
         }
         private List<String> ParseOneRow(String oneRowText)
         {
-            ++this.RowIndex;
+            ++this.RecordIndex;
 
             var textLen = oneRowText.Length;
             var sepChar = this.mCsvSettings.Seperator;
@@ -53,7 +59,7 @@ namespace Sky.Data.Csv
             if (this.mCsvSettings.UseCache && cachedRows.ContainsKey(oneRowText))
                 return cachedRows[oneRowText];
 
-            var result = new List<String>(16);
+            var recordInfo = new List<String>(16);
             for (Int32 charPos = 0; charPos < textLen; ++charPos)
             {
                 mCellValueBuilder.Length = 0;
@@ -70,7 +76,7 @@ namespace Sky.Data.Csv
                         mCellValueBuilder.Append(c);
                         if (++charPos >= textLen) break;
                     }
-                    result.Add(mCellValueBuilder.ToString());
+                    recordInfo.Add(mCellValueBuilder.ToString());
                 }
                 #endregion
                 #region Quoted CSV Cell Value Processor
@@ -88,7 +94,7 @@ namespace Sky.Data.Csv
                         else if ((textLen <= charPos + 1) || (nextChar = oneRowText[charPos + 1]) == sepChar)
                         {
                             ++charPos;
-                            result.Add(mCellValueBuilder.ToString());
+                            recordInfo.Add(mCellValueBuilder.ToString());
                             break;
                         }
                         else if (nextChar == '\"')
@@ -101,12 +107,12 @@ namespace Sky.Data.Csv
                 #endregion
             }
             if (oneRowText[textLen - 1] == sepChar)
-                result.Add(String.Empty);
+                recordInfo.Add(String.Empty);
 
             if (this.mCsvSettings.UseCache && !cachedRows.ContainsKey(oneRowText))
-                cachedRows[oneRowText] = result;
+                cachedRows[oneRowText] = recordInfo;
 
-            return result;
+            return recordInfo;
         }
 
         private static void EnsureParameters(Stream stream, CsvReaderSettings settings, IDataResolver<T> dataResolver)
@@ -144,61 +150,134 @@ namespace Sky.Data.Csv
             this.mFilePath = filePath;
         }
 
+        /// <summary>
+        /// Indicates the index of the current read CSV row. Only non-skipped rows will be counted.
+        /// </summary>
         public Int32 RowIndex { get; private set; }
+        /// <summary>
+        /// Indicates the index of the current read CSV record.
+        /// Only non-skipped and non-header rows will be resolved to a valid record and counted.
+        /// </summary>
+        public Int32 RecordIndex { get; private set; }
+        /// <summary>
+        /// Indicates the index of the current read CSV line, any line in the CSV file will be counted.
+        /// </summary>
+        public Int32 LineIndex { get; private set; }
+        /// <summary>
+        /// The most basic method to read a CSV record as a list of String values.
+        /// </summary>
+        /// <returns>A list of String values read.</returns>
         public List<String> ReadRow()
         {
-            if (!this.EnsureBuffer()) return null;
-
-            var oneRowText = new StringBuilder();
-            while (this.mBufferPosition < this.mBufferCharCount)
-            {
-                var firstChar = this.mBuffer[this.mBufferPosition++];
-
-                if (firstChar == '\r')
-                {
-                    if (!this.EnsureBuffer())
-                        return ParseOneRow(oneRowText.ToString());
-
-                    var secondChar = this.mBuffer[this.mBufferPosition++];
-
-                    //for macintosh csv format, it uses \r as line break
-                    if (secondChar != '\n') --this.mBufferPosition;
-
-                    return ParseOneRow(oneRowText.ToString());
-                }
-                else oneRowText.Append(firstChar);
-
-                this.EnsureBuffer();
-            }
-
-            if (this.mReader.EndOfStream && oneRowText.Length == 0)
+            if (!this.EnsureBuffer())
                 return null;
 
-            return ParseOneRow(oneRowText.ToString());
+            var oneRowBuilder = new StringBuilder();
+            var oneRowText = String.Empty;
+            var commentHint = this.mCsvSettings.CommentHint;
+
+            while (true)
+            {
+                oneRowBuilder.Length = 0;
+                while (this.mBufferPosition < this.mBufferCharCount)
+                {
+                    var firstChar = this.mBuffer[this.mBufferPosition++];
+
+                    if (firstChar == '\r')
+                    {
+                        //for macintosh csv format, it uses \r as line break
+                        if (this.EnsureBuffer() && this.mBuffer[this.mBufferPosition++] != '\n')
+                            --this.mBufferPosition;
+                        break;
+                    }
+                    else oneRowBuilder.Append(firstChar);
+
+                    //if there is no line break, we should read to the end of file.
+                    if (!this.EnsureBuffer()) break;
+                }
+                ++this.LineIndex;
+                oneRowText = oneRowBuilder.ToString();
+
+                //the first non-skipped row will be treat as header or first record
+                if (this.mCsvSettings.SkipEmptyLines && oneRowText.Length == 0)
+                    continue;
+                if (!String.IsNullOrEmpty(commentHint) && oneRowText.StartsWith(commentHint))
+                    continue;
+
+                ++this.RowIndex; //header is counted for row numbers
+                if (!fileHeaderAlreadySkipped && this.mCsvSettings.HasHeader)
+                {
+                    fileHeaderAlreadySkipped = true; continue;
+                }
+
+                var temporaryData = this.ParseOneRow(oneRowText);
+                return temporaryData;
+            }
         }
 
         #region Public Static Methods for creating instance
+        /// <summary>
+        /// Create an instance of CsvReader with a specified file path and a custom data resolver.
+        /// If the path does not exists, an exception will be thrown.
+        /// </summary>
+        /// <param name="filePath">The path of the CSV file to be read.</param>
+        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader<T> Create(String filePath, IDataResolver<T> dataResolver)
         {
             return Create(filePath, new CsvReaderSettings(), dataResolver);
         }
+        /// <summary>
+        /// Create an instance of CsvReader with a specified file path, a CsvReaderSettings object and a custom data resolver.
+        /// If the path does not exists, an exception will be thrown.
+        /// </summary>
+        /// <param name="filePath">The path of the CSV file to be read.</param>
+        /// <param name="settings">Specify the options to control behavior of CsvReader.</param>
+        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader<T> Create(String filePath, CsvReaderSettings settings, IDataResolver<T> dataResolver)
         {
             CheckFilePath(filePath);
             return new CsvReader<T>(filePath, settings, dataResolver);
         }
+        /// <summary>
+        /// Create an instance of CsvReader with a specified byte array and a custom data resolver.
+        /// </summary>
+        /// <param name="stream">A Byte array from which the CsvReader will read content.</param>
+        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader<T> Create(Byte[] stream, IDataResolver<T> dataResolver)
         {
             return Create(stream, new CsvReaderSettings(), dataResolver);
         }
+        /// <summary>
+        /// Create an instance of CsvReader with a specified byte array, a CsvReaderSettings object and a custom data resolver.
+        /// </summary>
+        /// <param name="stream">A Byte array from which the CsvReader will read content.</param>
+        /// <param name="settings">Specify the options to control behavior of CsvReader.</param>
+        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader<T> Create(Byte[] stream, CsvReaderSettings settings, IDataResolver<T> dataResolver)
         {
             return Create(new MemoryStream(stream), settings, dataResolver);
         }
+        /// <summary>
+        /// Create an instance of CsvReader with a specified readable stream and a custom data resolver.
+        /// </summary>
+        /// <param name="stream">A readable stream from which the CsvReader will read content.</param>
+        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader<T> Create(Stream stream, IDataResolver<T> dataResolver)
         {
             return Create(stream, new CsvReaderSettings(), dataResolver);
         }
+        /// <summary>
+        /// Create an instance of CsvReader with a specified readable stream, a CsvReaderSettings object and a custom data resolver.
+        /// </summary>
+        /// <param name="stream">A readable stream from which the CsvReader will read content.</param>
+        /// <param name="settings">Specify the options to control behavior of CsvReader.</param>
+        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader<T> Create(Stream stream, CsvReaderSettings settings, IDataResolver<T> dataResolver)
         {
             return new CsvReader<T>(stream, settings, dataResolver);
@@ -206,6 +285,9 @@ namespace Sky.Data.Csv
         #endregion
 
         #region Implementing IDisposable & IEnumerable
+        /// <summary>
+        /// Dispose the current CsvReader and close the opened file.
+        /// </summary>
         public void Dispose() { this.mReader.Close(); }
         IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
         public IEnumerator<T> GetEnumerator()
@@ -218,6 +300,9 @@ namespace Sky.Data.Csv
         #endregion
     }
 
+    /// <summary>
+    /// CsvReader with which you can read lists of String values from a CSV file.
+    /// </summary>
     public class CsvReader : CsvReader<List<String>>
     {
         private CsvReader(Stream stream, CsvReaderSettings settings)
@@ -232,27 +317,61 @@ namespace Sky.Data.Csv
         }
 
         #region Public Static Methods for creating instance
+        /// <summary>
+        /// Create an instance of CsvReader with a specified file path. If the path does not exists, an exception will be thrown.
+        /// </summary>
+        /// <param name="filePath">The path of the CSV file to be read.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader Create(String filePath)
         {
             return Create(filePath, new CsvReaderSettings());
         }
+        /// <summary>
+        /// Create an instance of CsvReader with a specified file path, and a CsvReaderSetting object.
+        /// If the path does not exists, an exception will be thrown.
+        /// </summary>
+        /// <param name="filePath">The path of the CSV file to be read.</param>
+        /// <param name="settings">Specify the options to control behavior of CsvReader.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader Create(String filePath, CsvReaderSettings settings)
         {
             CheckFilePath(filePath);
             return new CsvReader(filePath, settings);
         }
+        /// <summary>
+        /// Create an instance of CsvReader with a specified byte array as data source.
+        /// </summary>
+        /// <param name="stream">A Byte array from which the CsvReader will read content.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader Create(Byte[] stream)
         {
             return Create(stream, new CsvReaderSettings());
         }
+        /// <summary>
+        /// Create an instance of CsvReader with a specified byte array as data source, and a CsvReaderSetting object.
+        /// </summary>
+        /// <param name="stream">A Byte array from which the CsvReader will read content.</param>
+        /// <param name="settings">Specify the options to control behavior of CsvReader.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader Create(Byte[] stream, CsvReaderSettings settings)
         {
             return Create(new MemoryStream(stream), settings);
         }
+        /// <summary>
+        /// Create an instance of CsvReader with a specified readable stream as data source.
+        /// </summary>
+        /// <param name="stream">A readable stream from which the CsvReader will read content.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader Create(Stream stream)
         {
             return Create(stream, new CsvReaderSettings());
         }
+        /// <summary>
+        /// Create an instance of CsvReader with a specified readable stream as data source, and a CsvReaderSetting object.
+        /// </summary>
+        /// <param name="stream">A readable stream from which the CsvReader will read content.</param>
+        /// <param name="settings">Specify the options to control behavior of CsvReader.</param>
+        /// <returns>A CsvReader instance.</returns>
         public static CsvReader Create(Stream stream, CsvReaderSettings settings)
         {
             return new CsvReader(stream, settings);
