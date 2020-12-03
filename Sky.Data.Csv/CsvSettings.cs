@@ -1,4 +1,5 @@
-﻿using System;
+﻿//@Author: Sky Feng(im.sky@foxmail.com).
+using System;
 using System.Text;
 
 namespace Sky.Data.Csv
