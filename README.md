@@ -92,7 +92,7 @@ This is a simple but fast implementation of **```CsvReader```** and **```CsvWrit
 
 This CsvReader supports all four formats saved by the newest version of Excel, that's **comma seperated**, **ms dos**, **macintosh** and **comma seperated UTF8**. 
 
-By default, the ```CsvReaderSettings``` and ```CsvWriterSettings``` uses ```Encoding.Default``` as the default encoding and comma (,) as the field seperator. You can also specify these settings (and some other settings) by creating a new setting object and pass it to the ```Create``` static method.
+By default, the ```CsvReaderSettings``` and ```CsvWriterSettings``` uses ```Encoding.Default``` as the default encoding and comma (,) as the field separator. You can also specify these settings (**and some other settings, many settings are supported**) by creating a new setting object and pass it to the ```Create``` static method.
 
 
 
