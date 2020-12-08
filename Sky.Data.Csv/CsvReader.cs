@@ -186,14 +186,11 @@ namespace Sky.Data.Csv
                     if (firstChar == '\r')
                     {
                         //for macintosh csv format, it uses \r as line break
-                        if (this.EnsureBuffer() && this.mBuffer[this.mBufferPosition++] != '\n')
-                            --this.mBufferPosition;
+                        if (this.EnsureBuffer() && this.mBuffer[this.mBufferPosition] == '\n')
+                            ++this.mBufferPosition;
                         break;
                     }
                     else oneRowBuilder.Append(firstChar);
-
-                    //if there is no line break, we should read to the end of file.
-                    if (!this.EnsureBuffer()) break;
                 }
                 ++this.LineIndex;
                 oneRowText = oneRowBuilder.ToString();
@@ -308,12 +305,10 @@ namespace Sky.Data.Csv
         private CsvReader(Stream stream, CsvReaderSettings settings)
             : base(stream, settings, new RawDataResolver())
         {
-
         }
         private CsvReader(String filePath, CsvReaderSettings settings)
             : base(filePath, settings, new RawDataResolver())
         {
-
         }
 
         #region Public Static Methods for creating instance
