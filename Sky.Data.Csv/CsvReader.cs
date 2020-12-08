@@ -191,6 +191,10 @@ namespace Sky.Data.Csv
                         break;
                     }
                     else oneRowBuilder.Append(firstChar);
+
+                    //if there is no line break, we should read to the end of file.
+                    if (this.mBufferPosition >= this.mBufferCharCount)
+                        if (!this.EnsureBuffer()) break;
                 }
                 ++this.LineIndex;
                 oneRowText = oneRowBuilder.ToString();
