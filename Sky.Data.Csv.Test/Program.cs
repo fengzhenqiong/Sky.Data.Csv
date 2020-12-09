@@ -45,28 +45,32 @@ namespace Sky.Data.Csv.Test
     {
         static void TestGenericReader()
         {
+            var csvSettings = new CsvReaderSettings();
+            csvSettings.Encoding = System.Text.Encoding.UTF8;
             var dataResolver = new StudentResolver();
-            var csvFiles = new[] {
-                @"..\..\TestData.Csv\csv-students.csv",
+            var csvFiles = new String[] {
+                //@"..\..\TestData.Csv\csv-students.csv",
             };
             foreach (var csvFile in csvFiles)
             {
+                var itemCount = 0;
                 var startTime = DateTime.Now;
-                using (var reader = CsvReader<Student>.Create(csvFile, dataResolver))
+                using (var reader = CsvReader<Student>.Create(csvFile, csvSettings, dataResolver))
                 {
                     foreach (var data in reader)
                     {
+                        ++itemCount;
                     }
                 }
                 var endTime = DateTime.Now;
                 var ellapsed = (endTime - startTime).TotalMilliseconds;
-                Console.WriteLine("Time: {0}ms", ellapsed);
+                Console.WriteLine("Count: {0}\tTime: {1}ms", itemCount, ellapsed);
                 Console.WriteLine("======================");
             }
         }
         static void TestSpecificReader()
         {
-            var csvFiles = new[] {
+            var csvFiles = new String[] {
                 @"..\..\TestData.Csv\csv-ms-dos.csv",
                 @"..\..\TestData.Csv\csv-macintosh.csv",
                 @"..\..\TestData.Csv\csv-comma-delimited.csv",
@@ -74,26 +78,25 @@ namespace Sky.Data.Csv.Test
                 //@"..\..\TestData.Csv\csv-students.csv",
                 //@"..\..\TestData.Csv\longrowdata.csv",
             };
-
+            var csvSettings = new CsvReaderSettings();
+            csvSettings.Encoding = System.Text.Encoding.UTF8;
             foreach (var csvFile in csvFiles)
             {
-                var folder = Path.GetDirectoryName(csvFile);
-                var fileName = Path.GetFileNameWithoutExtension(csvFile);
-                var dumpFileName = String.Format("{0}-dumpped-sky.csv", fileName);
-                var dumpFile = Path.Combine(folder, dumpFileName);
-
+                var itemCount = 0;
                 var startTime = DateTime.Now;
-                using (var reader = CsvReader.Create(csvFile))
+                using (var reader = CsvReader.Create(csvFile, csvSettings))
                 {
                     foreach (var data in reader)
                     {
+                        ++itemCount;
                     }
                 }
                 var endTime = DateTime.Now;
                 var ellapsed = (endTime - startTime).TotalMilliseconds;
-                Console.WriteLine("Time: {0}ms", ellapsed);
+                Console.WriteLine("Count: {0}\tTime: {1}ms", itemCount, ellapsed);
                 Console.WriteLine("======================");
             }
+            Console.WriteLine();
         }
 
         static void Main(string[] args)
