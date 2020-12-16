@@ -20,7 +20,7 @@ namespace Sky.Data.Csv
         private readonly Char[] mBuffer;
         private Int32 mBufferPosition = 0, mBufferCharCount = 0;
         private readonly StreamReader mReader;
-        private readonly StringBuilder mCellValueBuilder = new StringBuilder(128);
+        private readonly StringBuilder mCsvTextBuilder = new StringBuilder(256);
         private readonly CsvReaderSettings mCsvSettings;
         private readonly String mFilePath;
 
@@ -53,16 +53,13 @@ namespace Sky.Data.Csv
             ++this.RecordIndex;
 
             var textLen = oneRowText.Length;
-            var sepChar = this.mCsvSettings.Seperator;
-
             if (textLen == 0) return new List<String>();
-            if (this.mCsvSettings.UseCache && cachedRows.ContainsKey(oneRowText))
-                return cachedRows[oneRowText];
 
             var recordInfo = new List<String>(16);
+            var sepChar = this.mCsvSettings.Seperator;
             for (Int32 charPos = 0; charPos < textLen; ++charPos)
             {
-                mCellValueBuilder.Length = 0;
+                mCsvTextBuilder.Length = 0;
                 var firstChar = oneRowText[charPos];
 
                 #region Non-Quoted CSV Cell Value Processor
@@ -71,46 +68,43 @@ namespace Sky.Data.Csv
                     for (var c = firstChar; c != sepChar; c = oneRowText[charPos])
                     {
                         if (c == '\"' && !this.mCsvSettings.IgnoreErrors)
-                            ThrowException(oneRowText, this.RowIndex, charPos);
+                            ThrowException(oneRowText, this.LineIndex, charPos);
 
-                        mCellValueBuilder.Append(c);
+                        mCsvTextBuilder.Append(c);
                         if (++charPos >= textLen) break;
                     }
-                    recordInfo.Add(mCellValueBuilder.ToString());
+                    recordInfo.Add(mCsvTextBuilder.ToString());
                 }
                 #endregion
                 #region Quoted CSV Cell Value Processor
                 else //This is a quoted cell value
                 {
                     if (textLen < charPos + 1 && !this.mCsvSettings.IgnoreErrors)
-                        ThrowException(oneRowText, this.RowIndex, charPos);
+                        ThrowException(oneRowText, this.LineIndex, charPos);
 
                     for (++charPos; charPos < textLen; ++charPos)
                     {
                         Char theChar = oneRowText[charPos], nextChar;
 
                         if (theChar != '\"')
-                            mCellValueBuilder.Append(theChar);
+                            mCsvTextBuilder.Append(theChar);
                         else if ((textLen <= charPos + 1) || (nextChar = oneRowText[charPos + 1]) == sepChar)
                         {
                             ++charPos;
-                            recordInfo.Add(mCellValueBuilder.ToString());
+                            recordInfo.Add(mCsvTextBuilder.ToString());
                             break;
                         }
                         else if (nextChar == '\"')
-                            mCellValueBuilder.Append(oneRowText[charPos = charPos + 1]);
+                            mCsvTextBuilder.Append(oneRowText[charPos = charPos + 1]);
                         //Code should not hit this point, it indicates an error
                         else if (!this.mCsvSettings.IgnoreErrors)
-                            ThrowException(oneRowText, this.RowIndex, charPos);
+                            ThrowException(oneRowText, this.LineIndex, charPos);
                     }
                 }
                 #endregion
             }
             if (oneRowText[textLen - 1] == sepChar)
                 recordInfo.Add(String.Empty);
-
-            if (this.mCsvSettings.UseCache && !cachedRows.ContainsKey(oneRowText))
-                cachedRows[oneRowText] = recordInfo;
 
             return recordInfo;
         }
@@ -139,6 +133,7 @@ namespace Sky.Data.Csv
         {
             this.dataResolver = dataResolver;
             this.mCsvSettings = settings = settings ?? new CsvReaderSettings();
+            this.mCsvSettings.UseCache = settings.UseCache || settings.SkipDuplicates;
             EnsureParameters(stream, settings, dataResolver);
             settings.BufferSize = Math.Min(4096 * 1024, Math.Max(settings.BufferSize, 4096));
             this.mReader = new StreamReader(stream, settings.Encoding, false, settings.BufferSize);
@@ -169,35 +164,39 @@ namespace Sky.Data.Csv
         /// <returns>A list of String values read.</returns>
         public List<String> ReadRow()
         {
-            if (!this.EnsureBuffer())
-                return null;
-
-            var oneRowBuilder = new StringBuilder();
-            var oneRowText = String.Empty;
             var commentHint = this.mCsvSettings.CommentHint;
-
             while (true)
             {
-                oneRowBuilder.Length = 0;
+                if (!this.EnsureBuffer()) return null;
+
+                #region Read one real CSV record line
+                mCsvTextBuilder.Length = 0;
                 while (this.mBufferPosition < this.mBufferCharCount)
                 {
                     var firstChar = this.mBuffer[this.mBufferPosition++];
 
                     if (firstChar == '\r')
                     {
-                        //for macintosh csv format, it uses \r as line break
-                        if (this.EnsureBuffer() && this.mBuffer[this.mBufferPosition] == '\n')
+                        if (this.mBufferPosition >= this.mBufferCharCount)
+                            if (!this.EnsureBuffer()) break;
+
+                        if (this.mBuffer[this.mBufferPosition] == '\n')
                             ++this.mBufferPosition;
+
+                        //for macintosh csv format, it uses \r as line break
                         break;
                     }
-                    else oneRowBuilder.Append(firstChar);
+                    else mCsvTextBuilder.Append(firstChar);
 
                     //if there is no line break, we should read to the end of file.
                     if (this.mBufferPosition >= this.mBufferCharCount)
                         if (!this.EnsureBuffer()) break;
                 }
+                #endregion
+
+                #region Processing header/empty lines/cache
                 ++this.LineIndex;
-                oneRowText = oneRowBuilder.ToString();
+                var oneRowText = mCsvTextBuilder.ToString();
 
                 //the first non-skipped row will be treat as header or first record
                 if (this.mCsvSettings.SkipEmptyLines && oneRowText.Length == 0)
@@ -208,10 +207,22 @@ namespace Sky.Data.Csv
                 ++this.RowIndex; //header is counted for row numbers
                 if (!fileHeaderAlreadySkipped && this.mCsvSettings.HasHeader)
                 {
-                    fileHeaderAlreadySkipped = true; continue;
+                    fileHeaderAlreadySkipped = true;
+                    continue;
                 }
 
+                //if a row is in cache, it's already read, process skip duplicates
+                if (this.mCsvSettings.SkipDuplicates && cachedRows.ContainsKey(oneRowText))
+                    continue;
+
+                //if use cache and the row is already read, use the existing value
+                if (this.mCsvSettings.UseCache && cachedRows.ContainsKey(oneRowText))
+                    return cachedRows[oneRowText];
                 var temporaryData = this.ParseOneRow(oneRowText);
+                //if use cache and the row is not read, add it to cache
+                if (this.mCsvSettings.UseCache) cachedRows[oneRowText] = temporaryData;
+                #endregion
+
                 return temporaryData;
             }
         }

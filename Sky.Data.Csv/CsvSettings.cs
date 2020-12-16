@@ -42,7 +42,9 @@ namespace Sky.Data.Csv
     {
         /// <summary>
         /// Whether or not to use cache when reading a CSV file, default is false.
-        /// This value is useful when there are many duplicate records in the CSV file.
+        /// This value is useful when most records are duplicates in a CSV file.
+        /// Please note that if most records are unique in a large CSV file, set this option to true will take huge amount of memory.
+        /// If SkipDuplicates is true, this value will also be treated as true.
         /// </summary>
         public Boolean UseCache { get; set; }
         /// <summary>
@@ -55,6 +57,11 @@ namespace Sky.Data.Csv
         /// If this option is not empty or null, any lines starts with the specified value will be ignored.
         /// </summary>
         public String CommentHint { get; set; }
+        /// <summary>
+        /// Whether or not skip duplicate records, default is false.
+        /// If this option is set to true, duplicate records will be skipped and ignored when reading and writing CSV files.
+        /// </summary>
+        public Boolean SkipDuplicates { get; set; }
         /// <summary>
         /// Whether the CSV file has a header, default is false.
         /// If true, the first not skipped line will be regarded to be the header of the CSV file and ignored.
