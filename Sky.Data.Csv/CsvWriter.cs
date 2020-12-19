@@ -15,9 +15,9 @@ namespace Sky.Data.Csv
     {
         private readonly StreamWriter mWriter;
         private readonly CsvWriterSettings mCsvSettings;
-        private readonly Char[] needQuoteChars;
+        private readonly Char[] mNeedQuoteChars;
 
-        private readonly IDataResolver<T> dataResolver;
+        private readonly IDataResolver<T> mDataResolver;
 
         private static void EnsureParameters(Stream stream, CsvWriterSettings settings, IDataResolver<T> dataResolver)
         {
@@ -51,11 +51,11 @@ namespace Sky.Data.Csv
         }
         protected CsvWriter(Stream stream, CsvWriterSettings settings, IDataResolver<T> dataResolver)
         {
-            this.dataResolver = dataResolver;
+            this.mDataResolver = dataResolver;
             this.mCsvSettings = settings = settings ?? new CsvWriterSettings();
             EnsureParameters(stream, settings, dataResolver);
             settings.BufferSize = Math.Min(4096 * 1024, Math.Max(settings.BufferSize, 4096));
-            needQuoteChars = new Char[] { '\n', '\"', settings.Seperator };
+            mNeedQuoteChars = new Char[] { '\n', '\"', settings.Seperator };
             this.mWriter = new StreamWriter(stream, settings.Encoding, settings.BufferSize);
             if (stream is FileStream)
             {
@@ -146,7 +146,7 @@ namespace Sky.Data.Csv
         /// <returns>The current CsvWriter instance.</returns>
         public CsvWriter<T> WriteRow(T data)
         {
-            return this.WriteRow(this.dataResolver.Serialize(data));
+            return this.WriteRow(this.mDataResolver.Serialize(data));
         }
         /// <summary>
         /// Write a list of String values as a CSV record to the current CSV file.
@@ -162,7 +162,7 @@ namespace Sky.Data.Csv
             {
                 var valueString = originalCellValueString ?? String.Empty;
 
-                if (Array.Exists(needQuoteChars, c => valueString.IndexOf(c) >= 0))
+                if (Array.Exists(mNeedQuoteChars, c => valueString.IndexOf(c) >= 0))
                 {
                     valueString = String.Format("\"{0}\"",
                         valueString.Replace("\"", "\"\"").Replace("\r\n", "\r"));

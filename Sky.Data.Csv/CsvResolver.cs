@@ -28,6 +28,12 @@ namespace Sky.Data.Csv
         /// </summary>
         /// <param name="data">The list of String values.</param>
         /// <returns>The deserialized object.</returns>
+        TData Deserialize(IEnumerable<String> data);
+        /// <summary>
+        /// Deserialize the specified list of String values to an object.
+        /// </summary>
+        /// <param name="data">The list of String values.</param>
+        /// <returns>The deserialized object.</returns>
         TData Deserialize(List<String> data);
     }
 
@@ -38,14 +44,19 @@ namespace Sky.Data.Csv
     /// <typeparam name="TData">The generic type of which objects will be serialized and deserialized.</typeparam>
     public abstract class AbstractDataResolver<TData> : IDataResolver<TData>
     {
-        public TData Deserialize(params String[] data)
+        public abstract TData Deserialize(List<String> data);
+
+        public virtual TData Deserialize(IEnumerable<String> data)
+        {
+            return Deserialize((List<String>)data ?? new List<String>(data));
+        }
+
+        public abstract List<String> Serialize(TData data);
+
+        public virtual TData Deserialize(params String[] data)
         {
             return Deserialize(new List<String>(data));
         }
-
-        public abstract TData Deserialize(List<String> data);
-
-        public abstract List<String> Serialize(TData data);
     }
 
     /// <summary>
