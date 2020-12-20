@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("A simple and fast CSV reader and writer")]
 [assembly: AssemblyProduct("Sky.Data.Csv")]
 [assembly: AssemblyCompany("SkySoft, Inc.")]
-[assembly: AssemblyCopyright("Copyright © SkySoft 2020")]
+[assembly: AssemblyCopyright("Copyright © SkySoft 2021")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
@@ -31,5 +31,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyFileVersion("2.3.0.0")]
-[assembly: AssemblyVersion("2.3.0.0")]
+[assembly: AssemblyFileVersion("2.4.0.0")]
+[assembly: AssemblyVersion("2.4.0.0")]
