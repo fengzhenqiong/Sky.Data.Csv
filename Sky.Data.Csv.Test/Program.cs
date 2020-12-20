@@ -50,17 +50,17 @@ namespace Sky.Data.Csv.Test
             var csvFiles = new String[] {
                 @"..\..\TestData.Csv\csv-students.csv",
             };
-            var csvWriterSettings = new CsvReaderSettings();
-            csvWriterSettings.Encoding = System.Text.Encoding.UTF8;
+            var csvReaderSettings = new CsvReaderSettings();
+            csvReaderSettings.Encoding = System.Text.Encoding.UTF8;
             var dataResolver = new StudentResolver();
             foreach (var csvFile in csvFiles)
             {
                 var recordCount = 0;
 
                 var startTime = DateTime.Now;
-                using (var reader = CsvReader<Student>.Create(csvFile, csvWriterSettings, dataResolver))
+                using (var reader = CsvReader<Student>.Create(csvFile, csvReaderSettings, dataResolver))
                 {
-                    foreach (var data in reader)
+                    foreach (var student in reader)
                     {
                         ++recordCount;
                     }
