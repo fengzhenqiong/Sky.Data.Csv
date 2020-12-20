@@ -43,57 +43,73 @@ namespace Sky.Data.Csv.Test
 
     class Program
     {
+        private static readonly double MB = 1024 * 1024.0;
+
         static void TestGenericReader()
         {
-            var csvSettings = new CsvReaderSettings();
-            csvSettings.Encoding = System.Text.Encoding.UTF8;
-            var dataResolver = new StudentResolver();
             var csvFiles = new String[] {
-                //@"..\..\TestData.Csv\csv-students.csv",
+                @"..\..\TestData.Csv\csv-students.csv",
             };
+            var csvWriterSettings = new CsvReaderSettings();
+            csvWriterSettings.Encoding = System.Text.Encoding.UTF8;
+            var dataResolver = new StudentResolver();
             foreach (var csvFile in csvFiles)
             {
-                var itemCount = 0;
+                var recordCount = 0;
+
                 var startTime = DateTime.Now;
-                using (var reader = CsvReader<Student>.Create(csvFile, csvSettings, dataResolver))
+                using (var reader = CsvReader<Student>.Create(csvFile, csvWriterSettings, dataResolver))
                 {
                     foreach (var data in reader)
                     {
-                        ++itemCount;
+                        ++recordCount;
                     }
                 }
-                var endTime = DateTime.Now;
-                var ellapsed = (endTime - startTime).TotalMilliseconds;
-                Console.WriteLine("Count: {0}\tTime: {1}ms", itemCount, ellapsed);
+                var ellapsed = (DateTime.Now - startTime).TotalSeconds;
+
+                Console.WriteLine("Count: {0}\tTime: {1}ms", recordCount, ellapsed);
                 Console.WriteLine("======================");
             }
         }
         static void TestSpecificReader()
         {
             var csvFiles = new String[] {
-                @"..\..\TestData.Csv\csv-ms-dos.csv",
-                @"..\..\TestData.Csv\csv-macintosh.csv",
-                @"..\..\TestData.Csv\csv-comma-delimited.csv",
                 //@"..\..\TestData.Csv\csv-bigdata.csv",
+                @"..\..\TestData.Csv\csv-comma-delimited.csv",
+                //@"..\..\TestData.Csv\csv-lumentest2.csv",
+                //@"..\..\TestData.Csv\csv-lumentest3.csv",
+                @"..\..\TestData.Csv\csv-macintosh.csv",
+                @"..\..\TestData.Csv\csv-ms-dos.csv",
+                @"..\..\TestData.Csv\csv-ms-dos-complex.csv",
                 //@"..\..\TestData.Csv\csv-students.csv",
                 //@"..\..\TestData.Csv\longrowdata.csv",
             };
-            var csvSettings = new CsvReaderSettings();
-            csvSettings.Encoding = System.Text.Encoding.UTF8;
+
+            var csvReaderSettings = new CsvReaderSettings();
+            csvReaderSettings.IgnoreErrors = true;
+            csvReaderSettings.Encoding = System.Text.Encoding.UTF8;
+            csvReaderSettings.SkipEmptyLines = true;
+
             foreach (var csvFile in csvFiles)
             {
-                var itemCount = 0;
+                Int32 recordCount = 0, cellCount = 0;
+                var fileSize = new FileInfo(csvFile).Length;
+
                 var startTime = DateTime.Now;
-                using (var reader = CsvReader.Create(csvFile, csvSettings))
+                using (var reader = CsvReader.Create(csvFile, csvReaderSettings))
                 {
                     foreach (var data in reader)
                     {
-                        ++itemCount;
+                        ++recordCount;
+                        cellCount += data.Count;
                     }
                 }
-                var endTime = DateTime.Now;
-                var ellapsed = (endTime - startTime).TotalMilliseconds;
-                Console.WriteLine("Count: {0}\tTime: {1}ms", itemCount, ellapsed);
+                var ellapsed = (DateTime.Now - startTime).TotalSeconds;
+
+                ellapsed = ellapsed == 0 ? 0.000003 : ellapsed;
+                var speed = (fileSize / MB / ellapsed).ToString("0.00");
+                Console.WriteLine("RC: {0,-9}CC: {1,-10}T(s): {2,-11}S:{3}M/s",
+                    recordCount, cellCount, ellapsed, speed);
                 Console.WriteLine("======================");
             }
             Console.WriteLine();
@@ -102,7 +118,7 @@ namespace Sky.Data.Csv.Test
         static void Main(string[] args)
         {
             TestSpecificReader();
-            TestGenericReader();
+            //TestGenericReader();
         }
     }
 }
