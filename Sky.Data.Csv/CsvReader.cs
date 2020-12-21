@@ -165,6 +165,9 @@ namespace Sky.Data.Csv
         /// <returns>A list of String values read.</returns>
         public List<String> ReadRow()
         {
+            if (this.mDisposed)
+                throw new ObjectDisposedException("reader", "The reader is disposed");
+
             var commentHint = this.mCsvSettings.CommentHint;
             while (true)
             {
@@ -319,10 +322,29 @@ namespace Sky.Data.Csv
         #endregion
 
         #region Implementing IDisposable & IEnumerable
+        private Boolean mDisposed = false;
         /// <summary>
-        /// Dispose the current CsvReader and close the opened file.
+        /// Dispose the current CsvReader and close the opened CSV file/stream.
         /// </summary>
-        public void Dispose() { this.mReader.Close(); }
+        public void Close() { Dispose(); }
+        /// <summary>
+        /// Dispose the current CsvReader and close the opened CSV file/stream.
+        /// </summary>
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+            Dispose(true);
+        }
+        protected virtual void Dispose(Boolean disposing)
+        {
+            if (this.mDisposed) return;
+
+            this.mReader.Close();
+
+            this.mDisposed = true;
+        }
+        ~CsvReader() { Dispose(false); }
+
         IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
         public IEnumerator<T> GetEnumerator()
         {
