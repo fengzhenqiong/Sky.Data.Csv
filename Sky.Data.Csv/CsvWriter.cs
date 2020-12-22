@@ -64,54 +64,6 @@ namespace Sky.Data.Csv
             }
         }
 
-        #region Public Static Methods for creating instance
-        /// <summary>
-        /// Create an instance of CsvWriter with a specified file path and a custom data resolver.
-        /// If the path already exists, an exception will be thrown.
-        /// </summary>
-        /// <param name="filePath">The path of the CSV file to be written.</param>
-        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
-        /// <returns>A CsvWriter instance.</returns>
-        public static CsvWriter<T> Create(String filePath, IDataResolver<T> dataResolver)
-        {
-            return Create(filePath, new CsvWriterSettings(), dataResolver);
-        }
-        /// <summary>
-        /// Create an instance of CsvWriter with a specified file path, a CsvWriterSettings object and a custom data resolver.
-        /// If the path already exists and AppendExisting and OverwriteExisting of settings are both false, an exception will be thrown.
-        /// </summary>
-        /// <param name="filePath">The path of the CSV file to be written.</param>
-        /// <param name="settings">Specify the options to control behavior of CsvWriter.</param>
-        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
-        /// <returns>A CsvWriter instance.</returns>
-        public static CsvWriter<T> Create(String filePath, CsvWriterSettings settings, IDataResolver<T> dataResolver)
-        {
-            CheckFilePath(filePath, settings);
-            return Create(File.OpenWrite(filePath), settings, dataResolver);
-        }
-        /// <summary>
-        /// Create an instance of CsvWriter with a specified writable stream and a custom data resolver.
-        /// </summary>
-        /// <param name="stream">A writable strem to be written into.</param>
-        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
-        /// <returns>A CsvWriter instance.</returns>
-        public static CsvWriter<T> Create(Stream stream, IDataResolver<T> dataResolver)
-        {
-            return Create(stream, new CsvWriterSettings(), dataResolver);
-        }
-        /// <summary>
-        /// Create an instance of CsvWriter with a specified writable stream, a CsvWriterSettings object and a custom data resolver.
-        /// </summary>
-        /// <param name="stream">A writable strem to be written into.</param>
-        /// <param name="settings">Specify the options to control behavior of CsvWriter.</param>
-        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
-        /// <returns>A CsvWriter instance.</returns>
-        public static CsvWriter<T> Create(Stream stream, CsvWriterSettings settings, IDataResolver<T> dataResolver)
-        {
-            return new CsvWriter<T>(stream, settings, dataResolver);
-        }
-        #endregion
-
         #region Public methods for writing CSV data
         /// <summary>
         /// Indicating the index of the current written row, including any non-skipped lines.
@@ -193,6 +145,54 @@ namespace Sky.Data.Csv
         public CsvWriter<T> WriteRow(params String[] data)
         {
             return this.WriteRow(new List<String>(data));
+        }
+        #endregion
+
+        #region Public Static Methods for creating instance
+        /// <summary>
+        /// Create an instance of CsvWriter with a specified file path and a custom data resolver.
+        /// If the path already exists, an exception will be thrown.
+        /// </summary>
+        /// <param name="filePath">The path of the CSV file to be written.</param>
+        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
+        /// <returns>A CsvWriter instance.</returns>
+        public static CsvWriter<T> Create(String filePath, IDataResolver<T> dataResolver)
+        {
+            return Create(filePath, new CsvWriterSettings(), dataResolver);
+        }
+        /// <summary>
+        /// Create an instance of CsvWriter with a specified file path, a CsvWriterSettings object and a custom data resolver.
+        /// If the path already exists and AppendExisting and OverwriteExisting of settings are both false, an exception will be thrown.
+        /// </summary>
+        /// <param name="filePath">The path of the CSV file to be written.</param>
+        /// <param name="settings">Specify the options to control behavior of CsvWriter.</param>
+        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
+        /// <returns>A CsvWriter instance.</returns>
+        public static CsvWriter<T> Create(String filePath, CsvWriterSettings settings, IDataResolver<T> dataResolver)
+        {
+            CheckFilePath(filePath, settings);
+            return Create(File.OpenWrite(filePath), settings, dataResolver);
+        }
+        /// <summary>
+        /// Create an instance of CsvWriter with a specified writable stream and a custom data resolver.
+        /// </summary>
+        /// <param name="stream">A writable strem to be written into.</param>
+        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
+        /// <returns>A CsvWriter instance.</returns>
+        public static CsvWriter<T> Create(Stream stream, IDataResolver<T> dataResolver)
+        {
+            return Create(stream, new CsvWriterSettings(), dataResolver);
+        }
+        /// <summary>
+        /// Create an instance of CsvWriter with a specified writable stream, a CsvWriterSettings object and a custom data resolver.
+        /// </summary>
+        /// <param name="stream">A writable strem to be written into.</param>
+        /// <param name="settings">Specify the options to control behavior of CsvWriter.</param>
+        /// <param name="dataResolver">A custom data resolver used to serialize and deserialize data.</param>
+        /// <returns>A CsvWriter instance.</returns>
+        public static CsvWriter<T> Create(Stream stream, CsvWriterSettings settings, IDataResolver<T> dataResolver)
+        {
+            return new CsvWriter<T>(stream, settings, dataResolver);
         }
         #endregion
 
