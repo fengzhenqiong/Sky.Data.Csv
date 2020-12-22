@@ -112,6 +112,7 @@ namespace Sky.Data.Csv
         }
         #endregion
 
+        #region Public methods for writing CSV data
         /// <summary>
         /// Indicating the index of the current written row, including any non-skipped lines.
         /// For what kind of lines will be skipped, refer to SkipEmptyLines of CsvWriterSettings.
@@ -155,6 +156,9 @@ namespace Sky.Data.Csv
         /// <returns>The current CsvWriter instance.</returns>
         public CsvWriter<T> WriteRow(IEnumerable<String> data)
         {
+            if (this.mDisposed)
+                throw new ObjectDisposedException("writer", "The writer is disposed");
+
             var rowLine = new StringBuilder(64);
             var seperator = this.mCsvSettings.Seperator;
 
@@ -190,10 +194,32 @@ namespace Sky.Data.Csv
         {
             return this.WriteRow(new List<String>(data));
         }
+        #endregion
+
+        #region Implementing IDisposable & IEnumerable
+        private Boolean mDisposed = false;
         /// <summary>
         /// Dispose the current CsvWriter instance.
         /// </summary>
-        public void Dispose() { this.mWriter.Close(); }
+        public void Close() { Dispose(); }
+        /// <summary>
+        /// Dispose the current CsvWriter instance.
+        /// </summary>
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+            Dispose(true);
+        }
+        protected virtual void Dispose(Boolean disposing)
+        {
+            if (this.mDisposed) return;
+
+            this.mWriter.Close();
+
+            this.mDisposed = true;
+        }
+        ~CsvWriter() { Dispose(false); }
+        #endregion
     }
 
     /// <summary>

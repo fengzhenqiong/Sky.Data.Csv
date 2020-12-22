@@ -146,6 +146,7 @@ namespace Sky.Data.Csv
             this.mFilePath = filePath;
         }
 
+        #region Public methods for reading CSV data
         /// <summary>
         /// Indicates the index of the current read CSV row. Only non-skipped rows will be counted.
         /// </summary>
@@ -251,6 +252,7 @@ namespace Sky.Data.Csv
                 return temporaryData;
             }
         }
+        #endregion
 
         #region Public Static Methods for creating instance
         /// <summary>
