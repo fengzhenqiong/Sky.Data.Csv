@@ -14,8 +14,8 @@ namespace Sky.Data.Csv
     /// <typeparam name="T">The generic type of which objects will be read.</typeparam>
     public class CsvReader<T> : IEnumerable<T>, IDisposable
     {
-        private const String INVALID_DATA = "ERROR. LINE: {0}, POSITION: {1}, ROW NO.: {2}.";
-        private const String INVALID_DATA_FILE = "ERROR. FILE: {0}, LINE: {1}, POSITION: {2}, ROW NO.: {3}.";
+        private const String INVALID_DATA = "ERROR. ROW NO.: {0}, POSITION: {1}, LINE: {2}.";
+        private const String INVALID_DATA_FILE = "ERROR. FILE: {0}, ROW NO.: {1}, POSITION: {2}, LINE: {3}.";
 
         private readonly Char[] mBuffer;
         private Int32 mBufferPosition = 0, mBufferCharCount = 0;
@@ -31,8 +31,8 @@ namespace Sky.Data.Csv
         private void ThrowException(String rowText, Int32 rowIndex, Int32 chPos)
         {
             var errorMsg = !String.IsNullOrEmpty(this.mFilePath)
-                    ? String.Format(INVALID_DATA_FILE, this.mFilePath, rowText, chPos, rowIndex)
-                    : String.Format(INVALID_DATA, rowText, chPos, rowIndex);
+                    ? String.Format(INVALID_DATA_FILE, this.mFilePath, rowIndex, chPos, rowText)
+                    : String.Format(INVALID_DATA, rowIndex, chPos, rowText);
             throw new InvalidDataException(errorMsg);
         }
         private Boolean EnsureBuffer()
@@ -182,36 +182,32 @@ namespace Sky.Data.Csv
                 {
                     var firstChar = this.mBuffer[this.mBufferPosition++];
 
-                    if (firstChar == '\r')
+                    mCsvTextBuilder.Append(firstChar);
+
+                    if (firstChar == '\"' && quoted)
                     {
                         if (this.mBufferPosition >= this.mBufferCharCount)
                             if (!this.EnsureBuffer()) break;
 
-                        if (this.mBuffer[this.mBufferPosition] == '\n')
-                            ++this.mBufferPosition;
-
-                        //for macintosh csv format, it uses \r as line break
-                        break;
+                        if (this.mBuffer[this.mBufferPosition] == '\"')
+                            mCsvTextBuilder.Append(this.mBuffer[this.mBufferPosition++]);
+                        else
+                            quoted = false;
                     }
-                    //else mCsvTextBuilder.Append(firstChar);
-                    else if (!quoted && firstChar == '\n') break;
-                    else
+                    else if (firstChar == '\"' && !quoted) quoted = true;
+                    else if ((firstChar == '\r' || firstChar == '\n') && !quoted)
                     {
-                        mCsvTextBuilder.Append(firstChar);
-                        if (firstChar == '\"')
+                        mCsvTextBuilder.Length = mCsvTextBuilder.Length - 1;
+                        if (firstChar == '\r')
                         {
-                            if (!quoted) quoted = true;
-                            else
-                            {
-                                if (this.mBufferPosition >= this.mBufferCharCount)
-                                    if (!this.EnsureBuffer()) break;
+                            if (this.mBufferPosition >= this.mBufferCharCount)
+                                if (!this.EnsureBuffer()) break;
 
-                                if (this.mBuffer[this.mBufferPosition] == '\"')
-                                    mCsvTextBuilder.Append(this.mBuffer[this.mBufferPosition++]);
-                                else
-                                    quoted = false;
-                            }
+                            if (this.mBuffer[this.mBufferPosition] == '\n')
+                                ++this.mBufferPosition;
                         }
+                        //If not quoted and encountered \r or \n, it's line break
+                        break;
                     }
 
                     //if there is no line break, we should read to the end of file.
