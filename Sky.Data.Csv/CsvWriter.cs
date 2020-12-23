@@ -55,7 +55,7 @@ namespace Sky.Data.Csv
             this.mCsvSettings = settings = settings ?? new CsvWriterSettings();
             EnsureParameters(stream, settings, dataResolver);
             settings.BufferSize = Math.Min(4096 * 1024, Math.Max(settings.BufferSize, 4096));
-            mNeedQuoteChars = new Char[] { '\n', '\"', settings.Seperator };
+            mNeedQuoteChars = new Char[] { '\r', '\n', '\"', settings.Seperator };
             this.mWriter = new StreamWriter(stream, settings.Encoding, settings.BufferSize);
             if (stream is FileStream)
             {
@@ -116,15 +116,14 @@ namespace Sky.Data.Csv
 
             foreach (var originalCellValueString in data)
             {
-                var valueString = originalCellValueString ?? String.Empty;
+                var vString = originalCellValueString ?? String.Empty;
 
-                if (Array.Exists(mNeedQuoteChars, c => valueString.IndexOf(c) >= 0))
+                if (Array.Exists(mNeedQuoteChars, c => vString.IndexOf(c) >= 0))
                 {
-                    valueString = String.Format("\"{0}\"",
-                        valueString.Replace("\"", "\"\"").Replace("\r\n", "\r"));
+                    vString = String.Format("\"{0}\"", vString.Replace("\"", "\"\""));
                 }
 
-                rowLine.Append(valueString).Append(seperator);
+                rowLine.Append(vString).Append(seperator);
             }
 
             if (rowLine.Length > 0)
