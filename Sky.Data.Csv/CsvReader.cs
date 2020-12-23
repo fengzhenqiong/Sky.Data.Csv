@@ -20,7 +20,7 @@ namespace Sky.Data.Csv
         private readonly Char[] mBuffer;
         private Int32 mBufferPosition = 0, mBufferCharCount = 0;
         private readonly StreamReader mReader;
-        private readonly StringBuilder mCsvTextBuilder = new StringBuilder(256);
+        private readonly StringBuilder mCsvTextBuilder = new StringBuilder(1024, 16 * 1024 * 1024);
         private readonly CsvReaderSettings mCsvSettings;
         private readonly String mFilePath;
 
