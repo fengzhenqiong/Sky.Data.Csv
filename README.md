@@ -1,5 +1,5 @@
 # Sky.Data.Csv
-A simple and fast CSV reader and writer.
+A simple and extremely fast CSV reader and writer which supports reading and writing raw CSV values and typed objects.
 
 
 
