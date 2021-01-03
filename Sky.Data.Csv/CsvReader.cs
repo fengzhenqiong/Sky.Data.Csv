@@ -197,7 +197,7 @@ namespace Sky.Data.Csv
                     else if (firstChar == '\"' && !quoted) quoted = true;
                     else if ((firstChar == '\r' || firstChar == '\n') && !quoted)
                     {
-                        mCsvTextBuilder.Length = mCsvTextBuilder.Length - 1;
+                        mCsvTextBuilder.Length -= 1;
                         if (firstChar == '\r')
                         {
                             if (this.mBufferPosition >= this.mBufferCharCount)
@@ -330,8 +330,8 @@ namespace Sky.Data.Csv
         /// </summary>
         public void Dispose()
         {
-            GC.SuppressFinalize(this);
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
         protected virtual void Dispose(Boolean disposing)
         {
