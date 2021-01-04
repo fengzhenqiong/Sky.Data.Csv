@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Sky.Data.Csv
 {
+    /// <summary>
+    /// Provide basic options which should be shared between CsvReader and CsvWriter
+    /// </summary>
     public abstract class CsvSettings
     {
         /// <summary>
@@ -26,6 +29,9 @@ namespace Sky.Data.Csv
         /// </summary>
         public Int32 BufferSize { get; set; }
 
+        /// <summary>
+        /// Constructor of CsvSettings
+        /// </summary>
         public CsvSettings()
         {
             this.Seperator = ',';
@@ -68,6 +74,10 @@ namespace Sky.Data.Csv
         /// Refer to CommentHint and SkipEmptyLines for more details.
         /// </summary>
         public Boolean HasHeader { get; set; }
+
+        /// <summary>
+        /// Constructor of CsvReaderSettings
+        /// </summary>
         public CsvReaderSettings()
         {
             this.UseCache = false;
@@ -94,6 +104,10 @@ namespace Sky.Data.Csv
         /// If both values are false, and the specified file exists, an exception will be thrown.
         /// </summary>
         public Boolean OverwriteExisting { get; set; }
+
+        /// <summary>
+        /// Constructor of CsvWriterSettings
+        /// </summary>
         public CsvWriterSettings()
         {
             this.AppendExisting = false;

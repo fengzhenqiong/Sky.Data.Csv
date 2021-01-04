@@ -44,18 +44,38 @@ namespace Sky.Data.Csv
     /// <typeparam name="TData">The generic type of which objects will be serialized and deserialized.</typeparam>
     public abstract class AbstractDataResolver<TData> : IDataResolver<TData>
     {
+        /// <summary>
+        /// Convert CSV raw data values to a typed object
+        /// </summary>
+        /// <param name="data">CSV raw data values</param>
+        /// <returns>A typed object</returns>
         public TData Deserialize(IEnumerable<String> data)
         {
             return Deserialize((List<String>)data ?? new List<String>(data));
         }
 
+        /// <summary>
+        /// Convert CSV raw data values to a typed object
+        /// </summary>
+        /// <param name="data">CSV raw data values</param>
+        /// <returns>A typed object</returns>
         public TData Deserialize(params String[] data)
         {
             return Deserialize(new List<String>(data));
         }
 
+        /// <summary>
+        /// Convert CSV raw data values to a typed object
+        /// </summary>
+        /// <param name="data">CSV raw data values</param>
+        /// <returns>A typed object</returns>
         public abstract TData Deserialize(List<String> data);
 
+        /// <summary>
+        /// Convert a typed object to CSV raw data values
+        /// </summary>
+        /// <param name="data">A typed object</param>
+        /// <returns>CSV raw data values</returns>
         public abstract List<String> Serialize(TData data);
     }
 
@@ -64,11 +84,21 @@ namespace Sky.Data.Csv
     /// </summary>
     public class RawDataResolver : AbstractDataResolver<List<String>>
     {
+        /// <summary>
+        /// Convert CSV raw data values to a typed object
+        /// </summary>
+        /// <param name="data">CSV raw data values</param>
+        /// <returns>A typed object</returns>
         public override List<String> Deserialize(List<String> data)
         {
             return data;
         }
 
+        /// <summary>
+        /// Convert a typed object to CSV raw data values
+        /// </summary>
+        /// <param name="data">A typed object</param>
+        /// <returns>CSV raw data values</returns>
         public override List<String> Serialize(List<String> data)
         {
             return data;

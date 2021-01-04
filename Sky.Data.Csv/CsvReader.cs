@@ -123,6 +123,11 @@ namespace Sky.Data.Csv
             if (dataResolver == null)
                 throw new ArgumentNullException("dataResolver");
         }
+
+        /// <summary>
+        /// Check whether the provided <paramref name="filePath"/> points to a valid file
+        /// </summary>
+        /// <param name="filePath">The path of the specified file containing CSV data</param>
         protected static void CheckFilePath(String filePath)
         {
             if (String.IsNullOrEmpty(filePath))
@@ -130,6 +135,12 @@ namespace Sky.Data.Csv
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("File does not exist", filePath);
         }
+        /// <summary>
+        /// Initialize the current CsvReader instance with provided information
+        /// </summary>
+        /// <param name="stream">A readable stream from which current reader will read data</param>
+        /// <param name="settings">Configurable options customizing current CsvReader instance</param>
+        /// <param name="dataResolver">A customer data resolver converting raw CSV values to objects</param>
         protected CsvReader(Stream stream, CsvReaderSettings settings, IDataResolver<T> dataResolver)
         {
             this.mDataResolver = dataResolver;
@@ -140,6 +151,12 @@ namespace Sky.Data.Csv
             this.mReader = new StreamReader(stream, settings.Encoding, false, settings.BufferSize);
             this.mBuffer = new Char[settings.BufferSize];
         }
+        /// <summary>
+        /// Initialize the current CsvReader instance with provided information
+        /// </summary>
+        /// <param name="filePath">A readable file from which current reader will read data</param>
+        /// <param name="settings">Configurable options customizing current CsvReader instance</param>
+        /// <param name="dataResolver">A customer data resolver converting raw CSV values to objects</param>
         protected CsvReader(String filePath, CsvReaderSettings settings, IDataResolver<T> dataResolver)
             : this(File.OpenRead(filePath), settings, dataResolver)
         {
@@ -333,6 +350,10 @@ namespace Sky.Data.Csv
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+        /// <summary>
+        /// Dispose current CsvReader instance, releasing resources
+        /// </summary>
+        /// <param name="disposing">Whether this method is called intentionally</param>
         protected virtual void Dispose(Boolean disposing)
         {
             if (this.mDisposed) return;
@@ -341,9 +362,16 @@ namespace Sky.Data.Csv
 
             this.mDisposed = true;
         }
+        /// <summary>
+        /// Finalizer of current CsvReader instance
+        /// </summary>
         ~CsvReader() { Dispose(false); }
 
         IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
+        /// <summary>
+        /// Get an enumerator which iterates CSV records from current CsvReader instance
+        /// </summary>
+        /// <returns>An enumerator which iterates CSV records</returns>
         public IEnumerator<T> GetEnumerator()
         {
             for (var row = this.ReadRow(); row != null; row = this.ReadRow())

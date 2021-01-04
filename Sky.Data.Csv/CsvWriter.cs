@@ -32,6 +32,13 @@ namespace Sky.Data.Csv
             if (dataResolver == null)
                 throw new ArgumentNullException("dataResolver");
         }
+
+        /// <summary>
+        /// Check whether the provided <paramref name="filePath"/> points to a valid file. If the specified file exists,
+        /// while OverwriteExisting and AppendExisting are both false, an exception will be thrown.
+        /// </summary>
+        /// <param name="filePath">The path of the specified file for writing</param>
+        /// <param name="settings">The OverwriteExisting and AppendExisting properties will be used for checking the file specified</param>
         protected static void CheckFilePath(String filePath, CsvWriterSettings settings)
         {
             settings = settings ?? new CsvWriterSettings();
@@ -49,6 +56,12 @@ namespace Sky.Data.Csv
             if (!Directory.Exists(parentFolder))
                 throw new FileNotFoundException("Cannot find specified folder", filePath);
         }
+        /// <summary>
+        /// Initialize the current CsvWriter instance with provided information
+        /// </summary>
+        /// <param name="stream">A writable stream to which current writer will write data</param>
+        /// <param name="settings">Configurable options customizing current CsvWriter instance</param>
+        /// <param name="dataResolver">A customer data resolver converting objects to raw CSV values</param>
         protected CsvWriter(Stream stream, CsvWriterSettings settings, IDataResolver<T> dataResolver)
         {
             this.mDataResolver = dataResolver;
@@ -209,6 +222,10 @@ namespace Sky.Data.Csv
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+        /// <summary>
+        /// Dispose current CsvWriter instance, releasing resources
+        /// </summary>
+        /// <param name="disposing">Whether this method is called intentionally</param>
         protected virtual void Dispose(Boolean disposing)
         {
             if (this.mDisposed) return;
@@ -217,6 +234,9 @@ namespace Sky.Data.Csv
 
             this.mDisposed = true;
         }
+        /// <summary>
+        /// Finalizer of current CsvWriter instance
+        /// </summary>
         ~CsvWriter() { Dispose(false); }
         #endregion
     }
