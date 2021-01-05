@@ -37,9 +37,6 @@ namespace Sky.Data.Csv
         }
         private Boolean EnsureBuffer()
         {
-            if (this.mBufferPosition < this.mBufferCharCount)
-                return true;
-
             if (this.mReader.EndOfStream)
                 return false;
 
@@ -56,50 +53,51 @@ namespace Sky.Data.Csv
             if (textLen == 0) return new List<String>();
 
             var recordInfo = new List<String>(16);
+            var ignoreErrors = this.mCsvSettings.IgnoreErrors;
             var sepChar = this.mCsvSettings.Seperator;
+
             for (Int32 charPos = 0; charPos < textLen; ++charPos)
             {
-                mCsvTextBuilder.Length = 0;
+                var startPos = charPos;
                 var firstChar = oneRowText[charPos];
 
                 #region Non-Quoted CSV Cell Value Processor
                 if (firstChar != '\"')
                 {
-                    for (var c = firstChar; c != sepChar; c = oneRowText[charPos])
+                    for (; firstChar != sepChar; firstChar = oneRowText[charPos])
                     {
-                        if (c == '\"' && !this.mCsvSettings.IgnoreErrors)
+                        if (firstChar == '\"' && !ignoreErrors)
                             ThrowException(oneRowText, this.LineIndex, charPos);
 
-                        mCsvTextBuilder.Append(c);
                         if (++charPos >= textLen) break;
                     }
-                    recordInfo.Add(mCsvTextBuilder.ToString());
+                    var cellValue = oneRowText.Substring(startPos, charPos - startPos);
+                    recordInfo.Add(cellValue);
                 }
                 #endregion
                 #region Quoted CSV Cell Value Processor
-                else //This is a quoted cell value
+                else if (firstChar == '\"')
                 {
-                    if (textLen < charPos + 1 && !this.mCsvSettings.IgnoreErrors)
+                    if (textLen <= charPos + 1 && !ignoreErrors)
                         ThrowException(oneRowText, this.LineIndex, charPos);
 
                     for (++charPos; charPos < textLen; ++charPos)
                     {
-                        Char theChar = oneRowText[charPos], nextChar;
+                        Char theChar = oneRowText[charPos], nextCh;
+                        if (theChar != '\"') continue;
 
-                        if (theChar != '\"')
-                            mCsvTextBuilder.Append(theChar);
-                        else if ((textLen <= charPos + 1) || (nextChar = oneRowText[charPos + 1]) == sepChar)
+                        if ((textLen <= charPos + 1) || (nextCh = oneRowText[charPos + 1]) == sepChar)
                         {
                             ++charPos;
-                            recordInfo.Add(mCsvTextBuilder.ToString());
+                            var charCount = charPos - startPos - 2;
+                            charCount = Math.Min(charCount, textLen - startPos - 1);
+                            var cellValue = oneRowText.Substring(startPos + 1, charCount);
+                            recordInfo.Add(cellValue.Replace("\"\"", "\""));
                             break;
                         }
-                        else if (nextChar == '\"')
-                            mCsvTextBuilder.Append(oneRowText[charPos = charPos + 1]);
-                        else if (!this.mCsvSettings.IgnoreErrors)
-                            ThrowException(oneRowText, this.LineIndex, charPos);
-                        else
-                            mCsvTextBuilder.Append(theChar);
+                        else if (!ignoreErrors && nextCh != '\"')
+                            ThrowException(oneRowText, this.LineIndex, charPos + 1);
+                        else if (nextCh == '\"') ++charPos;
                     }
                 }
                 #endregion
@@ -194,27 +192,34 @@ namespace Sky.Data.Csv
 
                 #region Read one real CSV record line
                 var quoted = false;
+                var startPosition = this.mBufferPosition;
                 mCsvTextBuilder.Length = 0;
                 while (this.mBufferPosition < this.mBufferCharCount)
                 {
                     var firstChar = this.mBuffer[this.mBufferPosition++];
 
-                    mCsvTextBuilder.Append(firstChar);
-
-                    if (firstChar == '\"' && quoted)
+                    if (quoted && firstChar == '\"')
                     {
                         if (this.mBufferPosition >= this.mBufferCharCount)
+                        {
+                            var charCount = this.mBufferPosition - startPosition;
+                            mCsvTextBuilder.Append(this.mBuffer, startPosition, charCount);
+
                             if (!this.EnsureBuffer()) break;
+                            startPosition = this.mBufferPosition;
+                        }
 
                         if (this.mBuffer[this.mBufferPosition] == '\"')
-                            mCsvTextBuilder.Append(this.mBuffer[this.mBufferPosition++]);
+                            ++this.mBufferPosition;
                         else
                             quoted = false;
                     }
-                    else if (firstChar == '\"' && !quoted) quoted = true;
-                    else if ((firstChar == '\r' || firstChar == '\n') && !quoted)
+                    else if (!quoted && firstChar == '\"') quoted = true;
+                    else if (!quoted && (firstChar == '\r' || firstChar == '\n'))
                     {
-                        mCsvTextBuilder.Length -= 1;
+                        var charCount = this.mBufferPosition - 1 - startPosition;
+                        mCsvTextBuilder.Append(this.mBuffer, startPosition, charCount);
+
                         if (firstChar == '\r')
                         {
                             if (this.mBufferPosition >= this.mBufferCharCount)
@@ -223,13 +228,20 @@ namespace Sky.Data.Csv
                             if (this.mBuffer[this.mBufferPosition] == '\n')
                                 ++this.mBufferPosition;
                         }
-                        //If not quoted and encountered \r or \n, it's line break
+
+                        //If not quoted and encountered \r or \n, it's a line break
                         break;
                     }
 
                     //if there is no line break, we should read to the end of file.
                     if (this.mBufferPosition >= this.mBufferCharCount)
+                    {
+                        var charCount = this.mBufferPosition - startPosition;
+                        mCsvTextBuilder.Append(this.mBuffer, startPosition, charCount);
+
                         if (!this.EnsureBuffer()) break;
+                        startPosition = this.mBufferPosition;
+                    }
                 }
                 #endregion
 

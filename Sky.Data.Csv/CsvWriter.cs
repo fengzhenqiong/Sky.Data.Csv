@@ -124,7 +124,7 @@ namespace Sky.Data.Csv
             if (this.mDisposed)
                 throw new ObjectDisposedException("writer", "The writer is disposed");
 
-            var rowLine = new StringBuilder(64);
+            var rowLine = new StringBuilder(1024);
             var seperator = this.mCsvSettings.Seperator;
 
             foreach (var originalCellValueString in data)
