@@ -98,7 +98,6 @@ namespace Sky.Data.Csv
                         {
                             ++charPos;
                             var charCount = charPos - startPos - 2;
-                            charCount = Math.Min(charCount, textLen - startPos - 1);
                             var cellValue = oneRowText.Substring(startPos + 1, charCount);
                             recordInfo.Add(cellValue.Replace("\"\"", "\""));
                             break;
