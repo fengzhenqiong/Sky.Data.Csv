@@ -13,10 +13,12 @@ namespace Sky.Data.Csv
     /// <typeparam name="T">The generic type of which objects will be written.</typeparam>
     public class CsvWriter<T> : IDisposable
     {
+        #region Private constants to remove magic values
         private const Int32 BUFFER_SZMIN = 4 * 1024;
         private const Int32 BUFFER_SZMAX = 4 * 1024 * 1024;
         private const Int32 ROW_CAP = 1024;
         private const Int32 ROW_CAPMAX = 16 * 1024 * 1024;
+        #endregion
 
         private readonly StreamWriter mWriter;
         private readonly CsvWriterSettings mCsvSettings;

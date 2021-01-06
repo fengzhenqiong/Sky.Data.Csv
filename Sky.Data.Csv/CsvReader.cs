@@ -14,6 +14,7 @@ namespace Sky.Data.Csv
     /// <typeparam name="T">The generic type of which objects will be read.</typeparam>
     public class CsvReader<T> : IEnumerable<T>, IDisposable
     {
+        #region Private constants to remove magic values
         private const Int32 BUFFER_SZMIN = 4 * 1024;
         private const Int32 BUFFER_SZMAX = 4 * 1024 * 1024;
         private const Int32 ROW_CAP = 1024;
@@ -22,6 +23,7 @@ namespace Sky.Data.Csv
 
         private const String INVALID_DATA = "ERROR. ROW NO.: {0}, POSITION: {1}, LINE: {2}.";
         private const String INVALID_DATA_FILE = "ERROR. FILE: {0}, ROW NO.: {1}, POSITION: {2}, LINE: {3}.";
+        #endregion
 
         private readonly Char[] mBuffer;
         private Int32 mBufferPosition, mBufferCharCount;
