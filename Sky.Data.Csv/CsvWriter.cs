@@ -13,6 +13,11 @@ namespace Sky.Data.Csv
     /// <typeparam name="T">The generic type of which objects will be written.</typeparam>
     public class CsvWriter<T> : IDisposable
     {
+        private const Int32 BUFFER_SZMIN = 4 * 1024;
+        private const Int32 BUFFER_SZMAX = 4 * 1024 * 1024;
+        private const Int32 ROW_CAP = 1024;
+        private const Int32 ROW_CAPMAX = 16 * 1024 * 1024;
+
         private readonly StreamWriter mWriter;
         private readonly CsvWriterSettings mCsvSettings;
         private readonly Char[] mNeedQuoteChars;
@@ -67,10 +72,10 @@ namespace Sky.Data.Csv
             this.mDataResolver = dataResolver;
             this.mCsvSettings = settings = settings ?? new CsvWriterSettings();
             EnsureParameters(stream, settings, dataResolver);
-            settings.BufferSize = Math.Min(4096 * 1024, Math.Max(settings.BufferSize, 4096));
+            settings.BufferSize = Math.Min(BUFFER_SZMAX, Math.Max(settings.BufferSize, BUFFER_SZMIN));
             mNeedQuoteChars = new Char[] { '\r', '\n', '\"', settings.Seperator };
             this.mWriter = new StreamWriter(stream, settings.Encoding, settings.BufferSize);
-            if (stream is FileStream)
+            if (stream.CanSeek)
             {
                 if (settings.AppendExisting) stream.Seek(0, SeekOrigin.End);
                 if (settings.OverwriteExisting) stream.SetLength(0);
@@ -124,8 +129,8 @@ namespace Sky.Data.Csv
             if (this.mDisposed)
                 throw new ObjectDisposedException("writer", "The writer is disposed");
 
-            var rowLine = new StringBuilder(1024);
             var seperator = this.mCsvSettings.Seperator;
+            var rowLine = new StringBuilder(ROW_CAP, ROW_CAPMAX);
 
             foreach (var originalCellValueString in data)
             {

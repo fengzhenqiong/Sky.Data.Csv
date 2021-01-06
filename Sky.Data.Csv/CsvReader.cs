@@ -14,24 +14,30 @@ namespace Sky.Data.Csv
     /// <typeparam name="T">The generic type of which objects will be read.</typeparam>
     public class CsvReader<T> : IEnumerable<T>, IDisposable
     {
+        private const Int32 BUFFER_SZMIN = 4 * 1024;
+        private const Int32 BUFFER_SZMAX = 4 * 1024 * 1024;
+        private const Int32 ROW_CAP = 1024;
+        private const Int32 ROW_CAPMAX = 16 * 1024 * 1024;
+        private const Int32 CACHE_SZMIN = 1024;
+
         private const String INVALID_DATA = "ERROR. ROW NO.: {0}, POSITION: {1}, LINE: {2}.";
         private const String INVALID_DATA_FILE = "ERROR. FILE: {0}, ROW NO.: {1}, POSITION: {2}, LINE: {3}.";
 
         private readonly Char[] mBuffer;
-        private Int32 mBufferPosition = 0, mBufferCharCount = 0;
+        private Int32 mBufferPosition, mBufferCharCount;
         private readonly StreamReader mReader;
-        private readonly StringBuilder mCsvTextBuilder = new StringBuilder(1024, 16 * 1024 * 1024);
+        private readonly StringBuilder mCsvTextBuilder = new StringBuilder(ROW_CAP, ROW_CAPMAX);
         private readonly CsvReaderSettings mCsvSettings;
         private readonly String mFilePath;
 
         private readonly IDataResolver<T> mDataResolver;
-        private readonly Dictionary<String, List<String>> mCachedRows = new Dictionary<String, List<String>>(1024);
+        private readonly Dictionary<String, List<String>> mCachedRows = new Dictionary<String, List<String>>(CACHE_SZMIN);
         private Boolean mFileHeaderAlreadySkipped = false;
 
         private void ThrowException(String rowText, Int32 rowIndex, Int32 chPos)
         {
             var errorMsg = !String.IsNullOrEmpty(this.mFilePath)
-                    ? String.Format(INVALID_DATA_FILE, this.mFilePath, rowIndex, chPos, rowText)
+                    ? String.Format(INVALID_DATA_FILE, this.mFilePath, rowIndex + 1, chPos, rowText)
                     : String.Format(INVALID_DATA, rowIndex, chPos, rowText);
             throw new InvalidDataException(errorMsg);
         }
@@ -145,7 +151,7 @@ namespace Sky.Data.Csv
             this.mCsvSettings = settings = settings ?? new CsvReaderSettings();
             this.mCsvSettings.UseCache = settings.UseCache || settings.SkipDuplicates;
             EnsureParameters(stream, settings, dataResolver);
-            settings.BufferSize = Math.Min(4096 * 1024, Math.Max(settings.BufferSize, 4096));
+            settings.BufferSize = Math.Min(BUFFER_SZMAX, Math.Max(settings.BufferSize, BUFFER_SZMIN));
             this.mReader = new StreamReader(stream, settings.Encoding, false, settings.BufferSize);
             this.mBuffer = new Char[settings.BufferSize];
         }
