@@ -86,6 +86,18 @@ static void Main(String[] args)
 
 
 
+## Run tests in Linux
+
+In earlier versions of the source codes, the **test project** only supports Windows OS. Now it also supports Linux.
+
+If you want to run the test codes in Linux (**tested on Ubuntu 18.04 LTS x64**), firstly change the current directory to **Sky.Data.Csv.Test** and then run following commands in the terminal:
+
+```
+Sky.Data.Csv.Test$ dotnet run -c Release --project Sky.Data.Csv.Test.Core.csproj
+```
+
+
+
 ## Target
 
 This is a simple but fast implementation of **```CsvReader```** and **```CsvWriter```**.

@@ -83,15 +83,15 @@ namespace Sky.Data.Csv.Test
         static void TestSpecificReader()
         {
             var csvFiles = new String[] {
-                @"../TestData.Csv/csv-bigdata.csv",
+                //@"../TestData.Csv/csv-bigdata.csv",
                 @"../TestData.Csv/csv-comma-delimited.csv",
                 //@"../TestData.Csv/csv-lumentest2.csv",
                 //@"../TestData.Csv/csv-lumentest3.csv",
                 @"../TestData.Csv/csv-macintosh.csv",
                 @"../TestData.Csv/csv-ms-dos.csv",
                 @"../TestData.Csv/csv-ms-dos-complex.csv",
-                @"../TestData.Csv/csv-students.csv",
-                @"../TestData.Csv/longrowdata.csv",
+                //@"../TestData.Csv/csv-students.csv",
+                //@"../TestData.Csv/longrowdata.csv",
             };
 
             var csvReaderSettings = new CsvReaderSettings();
