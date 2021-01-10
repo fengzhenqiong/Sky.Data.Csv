@@ -45,10 +45,18 @@ namespace Sky.Data.Csv.Test
     {
         private static readonly double MB = 1024 * 1024.0;
 
+        private static String ProcessCsvFile(String filePath)
+        {
+#if NETCORE
+            return filePath;
+#else
+            return String.Format("../{0}", filePath);
+#endif
+        }
         static void TestGenericReader()
         {
             var csvFiles = new String[] {
-                @"..\..\TestData.Csv\csv-students.csv",
+                @"../TestData.Csv/csv-students.csv",
             };
             var csvReaderSettings = new CsvReaderSettings();
             csvReaderSettings.Encoding = System.Text.Encoding.UTF8;
@@ -56,9 +64,10 @@ namespace Sky.Data.Csv.Test
             foreach (var csvFile in csvFiles)
             {
                 var recordCount = 0;
+                var csvFilePath = ProcessCsvFile(csvFile);
 
                 var startTime = DateTime.Now;
-                using (var reader = CsvReader<Student>.Create(csvFile, csvReaderSettings, dataResolver))
+                using (var reader = CsvReader<Student>.Create(csvFilePath, csvReaderSettings, dataResolver))
                 {
                     foreach (var student in reader)
                     {
@@ -74,15 +83,15 @@ namespace Sky.Data.Csv.Test
         static void TestSpecificReader()
         {
             var csvFiles = new String[] {
-                //@"..\..\TestData.Csv\csv-bigdata.csv",
-                @"..\..\TestData.Csv\csv-comma-delimited.csv",
-                //@"..\..\TestData.Csv\csv-lumentest2.csv",
-                //@"..\..\TestData.Csv\csv-lumentest3.csv",
-                @"..\..\TestData.Csv\csv-macintosh.csv",
-                @"..\..\TestData.Csv\csv-ms-dos.csv",
-                @"..\..\TestData.Csv\csv-ms-dos-complex.csv",
-                //@"..\..\TestData.Csv\csv-students.csv",
-                //@"..\..\TestData.Csv\longrowdata.csv",
+                @"../TestData.Csv/csv-bigdata.csv",
+                @"../TestData.Csv/csv-comma-delimited.csv",
+                //@"../TestData.Csv/csv-lumentest2.csv",
+                //@"../TestData.Csv/csv-lumentest3.csv",
+                @"../TestData.Csv/csv-macintosh.csv",
+                @"../TestData.Csv/csv-ms-dos.csv",
+                @"../TestData.Csv/csv-ms-dos-complex.csv",
+                @"../TestData.Csv/csv-students.csv",
+                @"../TestData.Csv/longrowdata.csv",
             };
 
             var csvReaderSettings = new CsvReaderSettings();
@@ -92,11 +101,13 @@ namespace Sky.Data.Csv.Test
 
             foreach (var csvFile in csvFiles)
             {
+                var csvFilePath = ProcessCsvFile(csvFile);
+
                 Int32 recordCount = 0, cellCount = 0;
-                var fileSize = new FileInfo(csvFile).Length;
+                var fileSize = new FileInfo(csvFilePath).Length;
 
                 var startTime = DateTime.Now;
-                using (var reader = CsvReader.Create(csvFile, csvReaderSettings))
+                using (var reader = CsvReader.Create(csvFilePath, csvReaderSettings))
                 {
                     foreach (var data in reader)
                     {
