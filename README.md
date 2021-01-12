@@ -73,7 +73,7 @@ public class StudentResolver : AbstractDataResolver<Student>
 static void Main(String[] args)
 {
     var dataResolver = new StudentResolver();
-    var csvPath = @"..\..\TestData.Csv\csv-students.csv";
+    var csvPath = "path-to-csv-file";
     using (var reader = CsvReader<Student>.Create(csvPath, dataResolver))
     {
         foreach (var student in reader)
