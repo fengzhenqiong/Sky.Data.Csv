@@ -91,7 +91,7 @@ namespace Sky.Data.Csv.Test
                 @"../TestData.Csv/csv-ms-dos.csv",
                 @"../TestData.Csv/csv-ms-dos-complex.csv",
                 //@"../TestData.Csv/csv-students.csv",
-                //@"../TestData.Csv/longrowdata.csv",
+                //@"../TestData.Csv/csv-longrowdata.csv",
             };
 
             var csvReaderSettings = new CsvReaderSettings();

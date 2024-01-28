@@ -83,6 +83,7 @@ namespace Sky.Data.Csv
             this.UseCache = false;
             this.IgnoreErrors = false;
             this.CommentHint = null;
+            this.SkipDuplicates = false;
             this.HasHeader = false;
         }
     }

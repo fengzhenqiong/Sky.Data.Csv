@@ -48,7 +48,7 @@ namespace Sky.Data.Csv
             if (this.mReader.EndOfStream)
                 return false;
 
-            this.mBufferCharCount = this.mReader.Read(this.mBuffer, 0, this.mBuffer.Length);
+            this.mBufferCharCount = this.mReader.ReadBlock(this.mBuffer, 0, this.mBuffer.Length);
             this.mBufferPosition = 0;
 
             return this.mBufferCharCount > 0;
@@ -203,9 +203,9 @@ namespace Sky.Data.Csv
                 mCsvTextBuilder.Length = 0;
                 while (this.mBufferPosition < this.mBufferCharCount)
                 {
-                    var firstChar = this.mBuffer[this.mBufferPosition++];
+                    var currentChar = this.mBuffer[this.mBufferPosition++];
 
-                    if (quoted && firstChar == '\"')
+                    if (quoted && currentChar == '\"')
                     {
                         if (this.mBufferPosition >= this.mBufferCharCount)
                         {
@@ -221,13 +221,13 @@ namespace Sky.Data.Csv
                         else
                             quoted = false;
                     }
-                    else if (!quoted && firstChar == '\"') quoted = true;
-                    else if (!quoted && (firstChar == '\r' || firstChar == '\n'))
+                    else if (!quoted && currentChar == '\"') quoted = true;
+                    else if (!quoted && (currentChar == '\r' || currentChar == '\n'))
                     {
                         var charCount = this.mBufferPosition - 1 - startPosition;
                         mCsvTextBuilder.Append(this.mBuffer, startPosition, charCount);
 
-                        if (firstChar == '\r')
+                        if (currentChar == '\r')
                         {
                             if (this.mBufferPosition >= this.mBufferCharCount)
                                 if (!this.EnsureBuffer()) break;
